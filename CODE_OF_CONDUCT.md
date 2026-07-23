@@ -1,0 +1,32 @@
+# Contributor Covenant Code of Conduct
+
+## Our pledge
+
+We pledge to make participation in the OpenCharts community a harassment-free
+experience for everyone, regardless of age, body size, visible or invisible
+disability, ethnicity, sex characteristics, gender identity and expression,
+level of experience, education, socio-economic status, nationality, personal
+appearance, race, caste, color, religion, or sexual identity and orientation.
+
+## Our standards
+
+Examples of behavior that contributes to a positive environment include:
+
+- Demonstrating empathy and kindness toward other people.
+- Respecting differing opinions, viewpoints, and experiences.
+- Giving and accepting constructive feedback gracefully.
+- Focusing on what is best for the community.
+
+Examples of unacceptable behavior include harassment, discriminatory jokes or
+language, personal attacks, and publishing others' private information without
+permission.
+
+## Enforcement
+
+Project maintainers are responsible for clarifying and enforcing these
+standards. Report unacceptable behavior through a private channel to the
+repository maintainers. Reports will be reviewed promptly and handled with
+appropriate confidentiality.
+
+This Code of Conduct is adapted from the Contributor Covenant, version 2.1:
+https://www.contributor-covenant.org/version/2/1/code_of_conduct.html

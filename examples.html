@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenCharts examples</title>
+    <script type="module" src="/src/examples.ts"></script>
+  </head>
+  <body>
+    <main class="examples-shell site-shell">
+      <header></header>
+      <section class="examples-hero">
+        <span>LIVE EXAMPLES</span>
+        <h1>Useful chart patterns,<br />ready to inspect.</h1>
+        <p>Every chart below is created with the public OpenCharts API. Pan, zoom, inspect, and use the linked guides to make each pattern yours.</p>
+      </section>
+      <section class="example-grid" aria-label="OpenCharts examples">
+        <article class="example-card feature-card">
+          <div class="example-copy"><div><span class="example-index">01</span><span class="tag">MARKET</span><h2>Price, volume &amp; events</h2></div><p>A compact trading view with a chart-owned corporate-event popup.</p></div>
+          <div class="example-chart tall" id="example-market"></div>
+          <footer><a href="/docs/getting-started.html">Build this chart &rarr;</a><span>OHLCV &middot; events</span></footer>
+        </article>
+        <article class="example-card feature-card live-card">
+          <div class="example-copy"><div><span class="example-index">02</span><span class="tag">STREAMING</span><h2>Live candle updates</h2></div><p>Two public <code>update()</code> patterns: one-second bars and intrabar price changes before a three-second candle closes.</p></div>
+          <div class="stream-stage"><section><div class="stream-label"><b>1-second candles</b><span id="one-second-status">Waiting for next bar</span></div><div class="stream-chart" id="example-one-second"></div></section><section><div class="stream-label"><b>3-second candles</b><span id="intrabar-status">0 / 10 intrabar updates</span></div><div class="stream-chart" id="example-intrabar"></div></section></div>
+          <footer><a href="/docs.html#streaming">Streaming API &rarr;</a><span>update &middot; 1 Hz &middot; 10 ticks / candle</span></footer>
+        </article>
+        <article class="example-card">
+          <div class="example-copy"><div><span class="example-index">03</span><span class="tag">ANALYSIS</span><h2>Composable signal pane</h2></div><p>A caller-computed line in an independently scaled lower pane.</p></div>
+          <div class="example-chart" id="example-signal"></div>
+          <footer><a href="/docs/series-and-panes.html">Series &amp; panes &rarr;</a><span>line &middot; pane</span></footer>
+        </article>
+        <article class="example-card">
+          <div class="example-copy"><div><span class="example-index">04</span><span class="tag">ANALYTICS</span><h2>Numeric distribution</h2></div><p>A series-only chart with a numeric x-axis and an area baseline.</p></div>
+          <div class="example-chart" id="example-distribution"></div>
+          <footer><a href="/docs/axes-and-interactions.html">Axes &amp; interaction &rarr;</a><span>area &middot; numeric x</span></footer>
+        </article>
+        <article class="example-card scatter-card">
+          <div class="example-copy"><div><span class="example-index">05</span><span class="tag">EXPLORATION</span><h2>Scatter, fits &amp; clusters</h2></div><p>Switch data shapes to compare ordinary regression lines with colored point groups and centroids.</p></div>
+          <div class="scatter-controls" role="group" aria-label="Scatter example dataset"><button class="active" data-scatter-shape="linear">Linear fit</button><button data-scatter-shape="curve">Curve fit</button><button data-scatter-shape="clusters">Clusters</button><span id="scatter-status">Least-squares trend</span></div>
+          <div class="example-chart" id="example-scatter"></div>
+          <footer><a href="/docs.html#scatter">Scatter API &rarr;</a><span>scatter &middot; lines &middot; numeric x</span></footer>
+        </article>
+        <article class="example-card">
+          <div class="example-copy"><div><span class="example-index">06</span><span class="tag">LIQUIDITY</span><h2>Order-book depth</h2></div><p>Cumulative bid and ask liquidity rendered with reusable step-area series.</p></div>
+          <div class="example-chart" id="example-depth"></div>
+          <footer><a href="/docs.html#depth">Depth data &rarr;</a><span>step-area &middot; numeric x</span></footer>
+        </article>
+        <article class="example-card orderbook-card">
+          <div class="example-copy"><div><span class="example-index">07</span><span class="tag">LIVE DATA</span><h2>Sub-second order-book ladder</h2></div><p>Preallocated DOM rows and animation-frame batching keep updates smooth under a fast market-data feed.</p></div>
+          <div class="orderbook-stage"><div class="orderbook-market"><b>BTC / USDC</b><span id="orderbook-status">Receiving updates &middot; 4 Hz</span><strong id="orderbook-mid">&mdash;</strong><small>Mid market</small></div><div id="example-orderbook" class="orderbook-host"></div></div>
+          <footer><a href="/docs.html#orderbook">Order-book API &rarr;</a><span>snapshot &middot; delta updates</span></footer>
+        </article>
+        <article class="example-card feature-card monte-carlo-card">
+          <div class="example-copy"><div><span class="example-index">09</span><span class="tag">RISK</span><h2>Monte Carlo price paths</h2></div><p>Historical price, 72 deterministic simulation paths, and 10th / 50th / 90th percentile projections composed from ordinary series.</p></div>
+          <div class="monte-carlo-chart" id="example-monte-carlo"></div>
+          <footer><a href="/docs/series-and-panes.html">Custom series API &rarr;</a><span>72 paths &middot; percentile bands</span></footer>
+        </article>
+        <article class="example-card options-chain-card">
+          <div class="example-copy"><div><span class="example-index">10</span><span class="tag">OPTIONS</span><h2>Options chain &amp; strategy builder</h2></div><p>Switch expirations, filter strikes, click bid to sell or ask to buy, and carry selected contracts into a multi-leg strategy.</p></div>
+          <div class="options-chain-status" id="options-chain-status">Select up to four contracts to build a strategy</div>
+          <div class="options-chain-host" id="example-options-chain"></div>
+          <footer><a href="/docs.html#options-chain">Options chain API &rarr;</a><span>expiry &middot; strike filter &middot; multi-leg</span></footer>
+        </article>
+        <article class="example-card payoff-card">
+          <div class="example-copy"><div><span class="example-index">11</span><span class="tag">OPTIONS</span><h2>Multi-leg options payoff</h2></div><p id="payoff-status">Select up to four contracts in the chain</p></div>
+          <div class="payoff-summary"><span>Max profit <b>+$2.20</b></span><span>Max loss <b>&minus;$3.80</b></span><span>Break evens <b>$89.80 &middot; $110.20</b></span></div>
+          <div class="example-chart payoff-chart" id="example-payoff"></div>
+          <footer><a href="/docs/series-and-panes.html">Generic series API &rarr;</a><span>area &middot; lines &middot; overlays</span></footer>
+        </article>
+        <article class="example-card surface-card">
+          <div class="example-copy"><div><span class="example-index">12</span><span class="tag">OPTIONS</span><h2>Implied-volatility surface</h2></div><p>Simulated term structure and skew across moneyness and expiry. Drag to orbit, scroll to zoom, and hover a point to inspect its IV.</p></div>
+          <div class="option-surface" id="example-surface"></div>
+          <footer><a href="/docs.html#options-surface">Options surface API &rarr;</a><span>moneyness &middot; term structure &middot; IV</span></footer>
+        </article>
+      </section>
+      <section class="examples-cta"><div><span>OPEN SOURCE, COMPOSABLE</span><h2>Start from a pattern, not a blank canvas.</h2></div><a href="/docs.html">Read the documentation &rarr;</a></section>
+    </main>
+  </body>
+</html>

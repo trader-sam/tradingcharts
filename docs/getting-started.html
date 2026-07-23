@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Getting started · OpenCharts</title>
+    <script type="module" src="/src/docs-examples.ts"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header></header>
+      <main class="page">
+        <p>GUIDE / 01</p>
+        <h1>Getting started</h1>
+        <p>OpenCharts owns one responsive Canvas inside a host element. Give that host a measurable height, load your OHLC data, and release the chart when the host is permanently removed.</p>
+        <div class="example"><header>LIVE EXAMPLE · OHLC</header><div class="example-chart" data-doc-example="basic"></div></div>
+        <h2>Install</h2>
+        <pre>npm install opencharts</pre>
+        <p>During local development, import from <code>./src/index.ts</code>. Published consumers import from <code>opencharts</code>.</p>
+        <h2>Create a chart</h2>
+        <pre>
+import { createChart, type Bar } from 'opencharts';
+
+const host = document.querySelector&lt;HTMLElement&gt;('#chart')!;
+host.style.height = '420px';
+
+const chart = createChart(host, {
+  background: '#0b1020',
+  crosshair: true,
+  yAxis: 'right',
+});
+
+const bars: Bar[] = [{ time, open, high, low, close, volume }];
+chart.setData(bars);</pre>
+        <div class="note">The host controls chart size. OpenCharts observes host resizes; do not set a canvas width or height yourself.</div>
+        <h2>Update a live chart</h2>
+        <pre>
+chart.update(nextBar);       // append newer data or replace an active timestamp
+chart.updateMany(batch);     // merge a feed burst and redraw once
+chart.setVolumeVisible(true);
+chart.fitContent();          // return to the visible data extent</pre>
+        <p>Use the same timestamp while a candle is still forming. Supply the next interval timestamp only when that bar closes.</p>
+        <h2>Lifecycle</h2>
+        <pre>
+const chart = createChart(host);
+// ...use chart
+chart.destroy(); // disconnects listeners and observers when the host is removed</pre>
+        <p><a href="/docs/series-and-panes.html">Next: plot custom data in series and panes →</a></p>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+.demo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(330px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.distribution-demo {
+  margin-top: 0;
+}
+
+.depth-demo {
+  margin-top: 0;
+}
+
+.distribution-chart {
+  height: 300px;
+}
+
+@media (max-width: 900px) {
+  .demo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .distribution-demo {
+    margin-top: 24px;
+  }
+}

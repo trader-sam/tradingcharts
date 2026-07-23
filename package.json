@@ -1,0 +1,58 @@
+{
+  "name": "opencharts",
+  "version": "0.1.0",
+  "description": "A browser-native, canvas financial charting library.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/opencharts.cjs",
+  "module": "./dist/opencharts.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/opencharts.js",
+      "require": "./dist/opencharts.cjs"
+    }
+  },
+  "files": [
+    "dist/opencharts.js",
+    "dist/opencharts.cjs",
+    "dist/types",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md"
+  ],
+  "keywords": [
+    "charts",
+    "financial-charts",
+    "candlestick",
+    "trading",
+    "canvas"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && vite build --config vite.config.lib.ts && tsc -p tsconfig.lib.json && node scripts/prepare-declarations.mjs",
+    "preview": "vite preview",
+    "bench": "node scripts/run-benchmarks.mjs",
+    "bench:size": "node scripts/report-size.mjs",
+    "test": "vitest run",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "verify:package": "node scripts/verify-package.mjs",
+    "release:check": "npm run build && npm run test && npm run test:e2e && npm run verify:package",
+    "prepack": "npm run build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "lightweight-charts": "^5.1.0",
+    "playwright": "^1.55.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^3.2.4"
+  }
+}

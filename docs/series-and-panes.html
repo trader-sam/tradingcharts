@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Series and panes · OpenCharts</title>
+    <script type="module" src="/src/docs-examples.ts"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header></header>
+      <main class="page">
+        <p>GUIDE / 02</p>
+        <h1>Series and panes</h1>
+        <p>Indicators are application-owned data. OpenCharts renders the points you provide as a line, histogram, area, or step-area without imposing an indicator catalog.</p>
+        <div class="example"><header>LIVE EXAMPLE · AREA SERIES IN A LOWER PANE</header><div class="example-chart" data-doc-example="series"></div></div>
+        <h2>Create an independently scaled pane</h2>
+        <pre>
+chart.addPane({ id: 'signal', title: 'Momentum', height: 0.28 });
+
+const signal = chart.createSeries({
+  id: 'momentum', pane: 'signal', type: 'area',
+  color: '#a78bfa', fillColor: '#3c2c69',
+  negativeFillColor: '#703647'
+});
+
+signal.setData([{ time, value: 12.4 }, { time: nextTime, value: -4.1 }]);
+signal.update({ time: nextTime, value: -3.8 });</pre>
+        <p>Create the pane before assigning a series to it. A pane shares horizontal navigation with the main chart but owns its Y range, pan state, and resize divider.</p>
+        <h2>Choose a renderer and scale</h2>
+        <pre>
+chart.addSeries({ id: 'ema', type: 'line', color: '#fbbf24', scale: 'price' });
+chart.addSeries({ id: 'volume-score', type: 'histogram', scale: 'independent' });
+chart.addSeries({ id: 'depth', type: 'step-area', fillColor: '#1f5d47' });</pre>
+        <ul>
+          <li><code>scale: 'price'</code> shares main OHLC coordinates.</li>
+          <li><code>scale: 'independent'</code> derives a dedicated range from the series.</li>
+          <li><code>fillColor</code> controls area fill; <code>negativeFillColor</code> changes the fill below zero.</li>
+        </ul>
+        <h2>Use custom-only charts</h2>
+        <pre>
+const chart = createChart(host, {
+  primarySeriesVisible: false,
+  ohlcTooltip: false,
+  xAxis: { type: 'numeric', formatter: (x) => `$${x}` }
+});
+chart.createSeries({ id: 'payoff', type: 'area' }).setData(points);</pre>
+        <p>For series-only charts, <code>time</code> remains a stable point identity; optional <code>x</code> supplies numeric or ordinal axis values. No placeholder OHLC bars are necessary.</p>
+        <p><a href="/docs/axes-and-interactions.html">Next: configure axes and pointer interactions →</a></p>
+      </main>
+    </div>
+  </body>
+</html>

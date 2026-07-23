@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>OpenCharts docs</title>
+    <script type="module" src="/src/docs-examples.ts"></script>
+    <style>
+      body {
+        margin: 0;
+        background: #080c17;
+        color: #cbd6ee;
+        font: 16px/1.65 system-ui;
+      }
+      .shell {
+        max-width: 1180px;
+        margin: auto;
+        padding: 0 28px;
+      }
+      .docs {
+        max-width: 780px;
+        margin: 48px auto;
+        padding-bottom: 70px;
+      }
+      header {
+        height: 80px;
+        display: flex;
+        align-items: center;
+        gap: 25px;
+        border-bottom: 1px solid #202944;
+      }
+      .brand {
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+      }
+      .brand span,
+      a {
+        color: #69f0bf;
+      }
+      header p {
+        flex: 1;
+        color: #8e9ab8;
+        font-size: 13px;
+      }
+      h1,
+      h2 {
+        color: #fff;
+      }
+      h1 {
+        font-size: 42px;
+        line-height: 1.1;
+      }
+      code,
+      pre,
+      nav {
+        font-family: ui-monospace, monospace;
+      }
+      pre {
+        padding: 16px;
+        background: #111a2d;
+        border: 1px solid #293553;
+        border-radius: 8px;
+        overflow: auto;
+      }
+      a {
+        text-decoration: none;
+      }
+      nav {
+        display: flex;
+        gap: 18px;
+        font-size: 12px;
+      }
+      .toc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin: 28px 0 38px;
+        padding: 12px 0;
+        border-block: 1px solid #293553;
+      }
+      .toc a {
+        font:
+          11px ui-monospace,
+          monospace;
+      }
+      h2 {
+        scroll-margin-top: 24px;
+      }
+      @media (max-width: 650px) {
+        header p {
+          display: none;
+        }
+        header {
+          gap: 16px;
+        }
+        .shell {
+          padding: 0 18px;
+        }
+        .docs {
+          margin-top: 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <div class="brand">◌ Open<span>Charts</span></div>
+        <p>Fast, composable financial charts for the open web.</p>
+        <nav>
+          <a href="/">Demo</a><a href="/docs.html">Docs</a
+          ><a href="/benchmarks.html">Benchmarks</a
+          ><a href="https://github.com" target="_blank" rel="noreferrer"
+            >GitHub ↗</a
+          >
+        </nav>
+      </header>
+      <main class="page docs">
+        <p>OPENCHARTS / DOCUMENTATION</p>
+        <h1>OpenCharts</h1>
+        <p>
+          Canvas-native financial visualization primitives for the open web.
+          Start with a chart, then add your own series, panes, event markers,
+          or standalone market-data components without a renderer runtime.
+        </p>
+        <div class="cards">
+          <a class="card" href="/docs/getting-started.html"><b>Build a first chart</b>Host sizing, OHLC data, updates, and lifecycle.</a>
+          <a class="card" href="/docs/series-and-panes.html"><b>Plot any data</b>Custom series, independent scales, and lower panes.</a>
+          <a class="card" href="/docs/axes-and-interactions.html"><b>Control navigation</b>Time, numeric, and ordinal axes with pointer controls.</a>
+          <a class="card" href="/examples.html"><b>Inspect live patterns</b>Market, streaming, depth, options, and order-book examples.</a>
+        </div>
+        <nav class="toc" aria-label="Documentation sections">
+          <a href="#quick-start">Start</a><a href="#data">Data</a><a href="#streaming">Streaming</a
+          ><a href="#series">Series</a><a href="#panes">Panes</a
+          ><a href="#axes">Axes</a><a href="#depth">Depth</a><a href="#orderbook">Order book</a><a href="#events">Events</a><a href="#trade-markers">Trades</a><a href="#drawings">Drawings</a
+          ><a href="#options-surface">Options surface</a><a href="#options-chain">Options chain</a><a href="#options">Options</a><a href="#quality">Quality</a>
+        </nav>
+        <h2 id="quick-start">Quick start</h2>
+        <pre>
+import { createChart } from 'opencharts';
+
+const chart = createChart(host);
+chart.setData([{ time, open, high, low, close, volume }]);</pre>
+        <h2 id="data">Data lifecycle</h2>
+        <pre>
+// Adds a newer bar, replaces a matching timestamp, or inserts an older bar.
+chart.update({ time, open, high, low, close, volume });
+
+// Batched updates redraw once and normalize duplicate timestamps.
+chart.updateMany(bars);</pre>
+        <p>
+          <code>setData</code> replaces the full dataset. <code>update</code>
+          replaces a matching timestamp or appends a newer one; older timestamps
+          are inserted in order. <code>updateMany</code> is the preferred path
+          for feed bursts because it coalesces rendering. When viewing history,
+          incoming bars preserve the viewport; at the live edge, the chart follows
+          the latest bar.
+        </p>
+        <h2 id="series">Plot your own data</h2>
+        <pre>
+chart.addSeries({
+  id: 'my-signal', type: 'line', color: '#fbbf24', scale: 'price'
+});
+chart.setSeriesData('my-signal', [
+  { time, value: 281.4 }, { time: nextTime, value: 283.1 }
+]);
+
+chart.addSeries({ id: 'score', type: 'histogram', scale: 'independent' });
+chart.updateSeries('score', { time, value: 0.72 });</pre>
+        <p>
+          For an object-oriented workflow, use
+          <code>createSeries(options)</code>. It returns a handle with
+          <code>setData</code>, <code>update</code>, and <code>remove</code>;
+          inspect configured ids with <code>getSeriesIds()</code> and
+          <code>getPaneIds()</code>.
+        </p>
+        <p>
+          Series are user-owned data. Use <code>line</code>, <code>histogram</code>,
+          <code>area</code>, or <code>step-area</code>; share the OHLC price
+          scale or select an independent normalized scale, then remove them with
+          <code>removeSeries(id)</code>. Calculate EMA, MACD, order flow, or any
+          other transform in your application.
+        </p>
+        <h3>Series-only domains</h3>
+        <pre>
+const chart = createChart(host, {
+  primarySeriesVisible: false, ohlcTooltip: false
+}).setXAxis({ type: 'numeric' });
+
+chart.addSeries({
+  id: 'curve', type: 'area', fillColor: '#1f5c72', negativeFillColor: '#743442'
+});
+chart.setSeriesData('curve', [
+  { time: 0, x: -1, value: 0.12 },
+  { time: 1, x:  0, value: 0.40 },
+  { time: 2, x:  1, value: 0.12 }
+]);</pre>
+        <p>
+          Custom series establish their own internal navigation domain when no
+          OHLC bars are supplied. <code>time</code> remains the stable point
+          identity; optional <code>x</code> provides numeric or ordinal axis
+          values. No placeholder bars are required.
+        </p>
+        <h2 id="panes">Custom lower panes</h2>
+        <pre>
+chart.addPane({ id: 'momentum', title: 'Momentum', height: 0.24 });
+chart.addSeries({ id: 'rsi', pane: 'momentum', color: '#a78bfa' });
+chart.setSeriesData('rsi', rsiPoints);
+
+chart.removePane('momentum'); // also removes its assigned series</pre>
+        <p>
+          Named panes share the chart's time navigation, stack below price, and
+          auto-scale from their own visible values. Drag inside a pane to pan
+          its Y scale, drag its right axis to zoom Y, and drag its divider to
+          resize. <code>height</code> is a plot-height fraction between 0.12 and
+          0.5.
+        </p>
+        <h2 id="axes">Timeframes and X axes</h2>
+        <pre>
+// Any millisecond interval works: seconds, minutes, hours, days, or custom.
+chart.setData(intradayBars);
+
+// Use labels from a numeric or ordinal domain instead of calendar time.
+chart.setXAxis({ type: 'ordinal', formatter: (value) => `Contract ${value}` });
+chart.setData([{ time: 0, x: 'A', open, high, low, close }]);</pre>
+        <p>
+          Time axes use stable calendar anchors: January renders as the year,
+          month starts remain fixed as zoom increases, then days, hours,
+          minutes, and seconds are added between them.
+        </p>
+        <h2 id="depth">Order-book depth</h2>
+        <pre>
+import { createDepthData } from 'opencharts';
+
+const depth = createDepthData(bids, asks, midPrice);
+chart.setData(depth.bars).setXAxis({
+  type: 'numeric', formatter: (price) => `$${Number(price).toFixed(2)}`
+});
+chart.addSeries({ id: 'bids', type: 'step-area', color: '#7df27a' });
+chart.addSeries({ id: 'asks', type: 'step-area', color: '#ff744d' });
+chart.setSeriesData('bids', depth.bids);
+chart.setSeriesData('asks', depth.asks);
+chart.setOverlays([{ type: 'vertical-line', time: depth.midTime,
+  label: String(depth.midPrice), detail: 'Mid market price' }]);</pre>
+        <p>
+          <code>createDepthData</code> sorts levels, accumulates each side from
+          the mid price, and returns a numeric X domain plus bid/ask point
+          collections. Use <code>fillColor</code> for explicit area fills, or
+          <code>negativeFillColor</code> to color the portion below zero, and
+          <code>yAxis: 'both'</code> when quantity labels should appear on each
+          edge.
+        </p>
+        <p>
+          A vertical overlay’s <code>label</code> is rendered as a badge on the
+          X axis at its anchor; its optional <code>detail</code> is a horizontal
+          callout beside the middle of the line.
+        </p>
+        <h2 id="orderbook">Live order-book ladder</h2>
+        <pre>
+import { createOrderBook } from 'opencharts';
+
+const book = createOrderBook(host, {
+  levels: 10,
+  quoteCurrency: 'USDC',
+  priceFormatter: (price) =&gt; price.toFixed(1)
+});
+
+book.setSnapshot({ bids, asks });
+// Feed deltas at any cadence; updates are coalesced per animation frame.
+book.update({ bids: [{ price: 61982.5, size: 250_000 }] });
+// A zero size removes a price level.
+book.update({ asks: [{ price: 61983, size: 0 }] });</pre>
+        <p>
+          <code>createOrderBook</code> preallocates its ladder rows and applies
+          snapshots or price-level deltas without rebuilding the DOM. It is
+          intended for fast live feeds; call <code>destroy()</code> when its
+          host is permanently removed. See the live <a href="/examples.html">order-book example</a>.
+        </p>
+        <h2 id="options-surface">3D options surface</h2>
+        <pre>
+import { createOptionsSurface } from 'opencharts';
+
+const surface = createOptionsSurface(host, {
+  strikeLabel: 'MONEYNESS (S / K)',
+  expiryLabel: 'TIME TO MATURITY',
+  valueLabel: 'IMPLIED VOLATILITY',
+  valueFormatter: (iv) =&gt; `${(iv * 100).toFixed(1)}% IV`
+});
+
+surface.setData([
+  { strike: 95, expiry: 30, value: 0.29 },
+  { strike: 100, expiry: 30, value: 0.23 },
+  { strike: 105, expiry: 30, value: 0.27 },
+  // Complete the strike × expiry grid for a continuous surface.
+]);</pre>
+        <p>
+          <code>createOptionsSurface</code> is a standalone Canvas component for
+          option-chain metrics such as implied volatility, skew, or model price.
+          It renders a strike × expiry grid as a perspective surface, supports
+          custom formatters and axis labels, two-axis drag orbiting, wheel zoom, and point hover
+          inspection. See it running in the <a href="/examples.html">examples gallery</a>.
+        </p>
+        <h2 id="options-chain">Options chain and multi-leg selection</h2>
+        <pre>
+import { createOptionsChain } from 'opencharts';
+
+const chain = createOptionsChain(host, {
+  spot: 102.4,
+  expirations: [{
+    id: '2026-03-20', label: '20 Mar · 42d',
+    rows: [{
+      strike: 100,
+      call: { bid: 4.10, ask: 4.25, impliedVolatility: 0.24, volume: 812, openInterest: 6_420 },
+      put: { bid: 1.80, ask: 1.95, impliedVolatility: 0.23, volume: 526, openInterest: 5_180 }
+    }]
+  }],
+  maxLegs: 6,
+  onLegsChange: (legs) =&gt; saveDraftStrategy(legs)
+});
+
+chain.setSpot(103.15);
+const legs = chain.getLegs();
+chain.clearLegs();</pre>
+        <p>
+          <code>createOptionsChain</code> is a DOM component for fast contract
+          selection. Quotes can include implied volatility, volume, and open
+          interest. It provides expiration switching, a strike filter, call/put
+          visibility, and an accessible multi-leg basket. Clicking a bid adds a
+          sell leg; clicking an ask adds a buy leg. Expiration changes preserve
+          selected legs so callers can compose calendars and diagonals. See the
+          live <a href="/examples.html">strategy-builder example</a>.
+        </p>
+        <h2 id="streaming">Streaming candles</h2>
+        <pre>
+// A new one-second candle.
+chart.update({ time: previous.time + 1_000, open, high, low, close });
+
+// Repeatedly replace the same active three-second candle as ticks arrive.
+chart.update({ time: activeCandleTime, open, high, low, close });</pre>
+        <p>
+          <code>update()</code> replaces a matching timestamp and appends a newer
+          one. This supports both fixed-interval bars and high-frequency intrabar
+          updates without replacing the full dataset. See both patterns running in
+          the <a href="/examples.html">live examples gallery</a>.
+        </p>
+        <h2>Built-in conveniences</h2>
+        <pre>
+chart.setVolumeVisible(true);
+chart.setEvents(events);</pre>
+        <p>
+          Volume and corporate events are optional layers for the market series.
+        </p>
+        <h2 id="events">Corporate events</h2>
+        <pre>
+chart.setEvents([
+  { time, type: 'dividend', marker: {
+      color: '#6ee7b7', icon: '$', shape: 'diamond', filled: false
+  }}
+]);</pre>
+        <p>
+          Markers support per-event color, icon, circle/square/diamond shape,
+          and filled or outlined rendering. Clicking a marker opens its optional
+          <code>popup</code> content directly in the chart.
+        </p>
+        <h2 id="trade-markers">Buy and sell arrows</h2>
+        <pre>
+chart.setTradeMarkers([
+  { time: entryBar.time, side: 'buy', price: 281.42, label: 'Entry' },
+  { time: exitBar.time, side: 'sell', label: 'Exit', color: '#ff8b9c' }
+]);</pre>
+        <p>
+          <code>setTradeMarkers</code> renders caller-owned buy and sell arrows.
+          When <code>price</code> is omitted, buy arrows sit below the bar and sell
+          arrows sit above it; supply an execution price to anchor an arrow exactly.
+          Replacing the marker array is efficient for a live execution feed. The
+          one-second streaming example in the <a href="/examples.html">gallery</a>
+          adds an arrow with each new candle.
+        </p>
+        <div class="example event-playground">
+          <div class="example-title">LIVE EXAMPLE · EVENT CUSTOMIZER</div>
+          <div class="example-chart" data-doc-example="events"></div>
+          <div class="event-workbench" data-event-controls>
+            <div class="event-controls">
+              <label>Label <input name="label" value="D" maxlength="3" /></label>
+              <label>Color <input name="color" type="color" value="#3b82f6" /></label>
+              <label>Shape
+                <select name="shape">
+                  <option value="circle">Circle</option>
+                  <option value="square">Square</option>
+                  <option value="diamond" selected>Diamond</option>
+                </select>
+              </label>
+              <label class="check"><input name="filled" type="checkbox" checked /> Filled</label>
+            </div>
+            <div class="popup-controls">
+              <b>Popup metadata</b>
+              <label>Title <input name="title" value="ACME dividend" /></label>
+              <label>Amount <input name="amount" value="$0.24" /></label>
+              <div class="event-popup-preview" data-event-popup-preview></div>
+            </div>
+          </div>
+          <p class="event-hint">Edit a control to update the live marker, then click the marker to open its chart popup. The preview mirrors the same <code>popup</code> content.</p>
+        </div>
+        <pre>
+chart.setEvents([{
+  time, type: 'dividend', label: 'D',
+  marker: { color: '#3b82f6', shape: 'diamond', filled: true },
+  popup: {
+    title: 'ACME dividend',
+    rows: [{ label: 'Amount', value: '$0.24' }],
+    actionLabel: 'See dividend history'
+  }
+}]);</pre>
+        <h2 id="drawings">Drawings</h2>
+        <pre>
+chart.setDrawingTool('trendline');
+chart.setDrawingTool('horizontal-line');
+chart.setDrawingTool('free-draw');
+chart.clearDrawings();</pre>
+        <p>
+          Tools work in both price and user-created lower panes. Use
+          <code>getDrawings()</code> to persist results.
+        </p>
+        <h2 id="options">Options</h2>
+        <pre>
+const chart = createChart(host, {
+  background: '#0b1020', textColor: '#cbd6ee',
+  upColor: '#38d39f', downColor: '#ff6b81', crosshair: true,
+  ohlcTooltip: 'fixed',
+  ohlcLegend: { title: 'ACME · 1 day', showVolume: true },
+  padding: { right: 68, bottom: 32 }
+});</pre>
+        <p>
+          Wheel over the plot zooms around the cursor. Wheel or drag on a price
+          axis scales that pane; dragging a lower-pane divider resizes it. The
+          crosshair exposes both a price badge and an X-axis badge. Set
+          <code>ohlcTooltip: 'fixed'</code> for a compact, non-floating OHLC
+          legend that stays at the top-left of the plot; it still updates as
+          the crosshair moves.
+        </p>
+        <p>
+          Hover the fixed <code>Vol.</code> legend or a removable main-pane series to reveal its compact
+          floating control. The control can hide volume or remove the series;
+          give custom series a <code>label</code> and set
+          <code>removable: false</code> when that action should not be offered.
+        </p>
+        <h2>Custom-series-only charts</h2>
+        <pre>
+const chart = createChart(host, {
+  primarySeriesVisible: false,
+  ohlcTooltip: false
+});
+chart.addSeries({ id: 'distribution', type: 'area', color: '#7dd3fc' });
+chart.setSeriesData('distribution', points);</pre>
+        <p>
+          Use these options for charts powered solely by custom data. The
+          distribution demo uses this exact public API—there are no demo-only
+          rendering paths.
+        </p>
+        <h2 id="scatter">Scatter plots</h2>
+        <pre>
+const samples = chart.createSeries({
+  id: 'samples', type: 'scatter', color: '#7dd3fc', markerRadius: 4
+});
+samples.setData(observations.map((sample, index) => ({
+  time: index, x: sample.feature, value: sample.target
+})));
+
+chart.createSeries({ id: 'fit', type: 'line', color: '#ff8c9b' })
+  .setData(regressionLine);</pre>
+        <p>
+          Scatter is a first-class custom series. It uses the same numeric,
+          ordinal, or time X domain as every other series, so fitted lines,
+          confidence bands, centroids, and clusters are simply additional
+          caller-owned series. See the interactive <a href="/examples.html">scatter example</a>.
+        </p>
+        <h2 id="quality">Verification and benchmarks</h2>
+        <pre>
+npm run test
+npm run build
+npm run bench
+npm run bench:size</pre>
+        <p>
+          The benchmark page compares attached-DOM cold creation, data
+          replacement, and time-scale updates with Lightweight Charts. Treat
+          results as a repeatable local signal, not a universal ranking.
+        </p>
+        <h2>Project status</h2>
+        <p>
+          This is an early prototype. Public APIs are intentionally small and
+          may evolve. Contributions are most useful around API design,
+          accessibility, tests, documentation, and additional series/pane types.
+        </p>
+      </main>
+    </div>
+  </body>
+</html>

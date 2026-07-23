@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Axes and interaction · OpenCharts</title>
+    <script type="module" src="/src/docs-examples.ts"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header></header>
+      <main class="page">
+        <p>GUIDE / 03</p>
+        <h1>Axes and interaction</h1>
+        <p>Time is the default X domain. Numeric and ordinal domains are equally first-class, using caller-provided values and stable label anchors as you zoom.</p>
+        <div class="example"><header>LIVE EXAMPLE · NUMERIC X AXIS</header><div class="example-chart" data-doc-example="axes"></div></div>
+        <h2>Configure an X domain</h2>
+        <pre>
+chart.setXAxis({ type: 'time' }); // default: milliseconds since epoch
+
+chart.setXAxis({
+  type: 'numeric',
+  formatter: (value) => `$${Number(value).toFixed(0)}`
+});
+chart.setData([{ time: 0, x: 95, open, high, low, close }]);
+
+chart.setXAxis({ type: 'ordinal', formatter: (value) => `Contract ${value}` });</pre>
+        <p>Time axes keep calendar anchors stable: January uses a year label, month starts remain fixed, then days and intraday labels appear as zoom increases. Numeric axes use their actual continuous coordinates, preserve irregular spacing, and generate readable value ticks from the visible range.</p>
+        <h2>Pointer controls</h2>
+        <ul>
+          <li><b>Drag the plot</b> to pan freely in X. On numeric axes, this moves the continuous numeric viewport; price remains fit to visible data until its Y axis is unlocked.</li>
+          <li><b>Wheel the plot</b> to zoom around the cursor. Numeric axes retain the cursor's exact coordinate; time-series X zoom keeps the final visible bar anchored.</li>
+          <li><b>Drag or scroll a Y axis</b> to unlock and scale that pane vertically. Axis cursors show the available direction.</li>
+          <li><b>Drag a lower-pane divider</b> to resize a pane; drag inside that pane to pan its own Y range.</li>
+          <li><b>Hover the plot</b> for crosshair, price, and X-axis labels.</li>
+        </ul>
+        <h2>Fit and reset</h2>
+        <pre>
+chart.fitContent();
+chart.setType('line');
+chart.setDrawingTool('trendline');</pre>
+        <p><a href="/docs.html">Back to the complete API overview →</a></p>
+      </main>
+    </div>
+  </body>
+</html>
