@@ -2,12 +2,12 @@ import { expect, test } from "playwright/test";
 
 /**
  * Browser smoke coverage for the public demo. Run with:
- *   npx playwright test e2e/opencharts.e2e.ts --config=e2e/playwright.config.ts
+ *   npx playwright test e2e/tradingcharts.e2e.ts --config=e2e/playwright.config.ts
  *
  * The config starts Vite, so this remains independent from the library's
  * package scripts until the browser suite is promoted to CI.
  */
-test.describe("OpenCharts demo", () => {
+test.describe("TradingCharts demo", () => {
   test("loads without console errors and exposes its chart demos", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (message) => {
@@ -101,13 +101,55 @@ test.describe("OpenCharts demo", () => {
     expect(after.equals(before)).toBe(false);
   });
 
+  test("supports keyboard navigation on chart canvases", async ({ page }) => {
+    await page.goto("/");
+    const chart = page.locator("#chart canvas");
+    await chart.focus();
+    await expect(chart).toHaveAttribute("role", "application");
+    const before = await chart.screenshot();
+    await page.keyboard.press("ArrowLeft");
+    expect((await chart.screenshot()).equals(before)).toBe(false);
+
+    await page.goto("/examples.html");
+    const surface = page.locator("#example-surface canvas");
+    await surface.focus();
+    await expect(surface).toHaveAttribute("role", "application");
+    const surfaceBefore = await surface.screenshot();
+    await page.keyboard.press("ArrowRight");
+    expect((await surface.screenshot()).equals(surfaceBefore)).toBe(false);
+  });
+
+  test("restores persisted drawings and destroys a consumer chart", async ({ page }) => {
+    await page.goto("/");
+    const result = await page.evaluate(async () => {
+      const { createChart } = await import("/src/index.ts");
+      const host = document.createElement("div");
+      host.style.cssText = "width: 640px; height: 320px";
+      document.body.append(host);
+      const chart = createChart(host).setData([
+        { time: 1, open: 10, high: 12, low: 9, close: 11 },
+        { time: 2, open: 11, high: 13, low: 10, close: 12 },
+      ]);
+      chart.setDrawings([{ id: "saved-line", type: "trendline", anchors: [{ logical: 0, price: 10 }, { logical: 1, price: 12 }] }]);
+      const saved = chart.getDrawings();
+      if (saved[0]?.type !== "trendline") throw new Error("Drawing did not restore.");
+      saved[0].anchors[0].price = 999;
+      const isolated = chart.getDrawings()[0]?.type === "trendline" && chart.getDrawings()[0].anchors[0].price === 10;
+      chart.destroy();
+      const destroyed = !host.querySelector("canvas");
+      host.remove();
+      return { isolated, destroyed };
+    });
+    expect(result).toEqual({ isolated: true, destroyed: true });
+  });
+
   test("keeps the public documentation guides and component reference reachable", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
     page.on("pageerror", (error) => errors.push(error.message));
 
     await page.goto("/docs.html");
-    await expect(page.getByRole("heading", { name: "OpenCharts" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "TradingCharts" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "3D options surface" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Series & panes" }).first()).toBeVisible();
     await page.getByRole("link", { name: "Getting started" }).first().click();
@@ -128,19 +170,19 @@ test.describe("OpenCharts demo", () => {
     await expect(page.getByText("Three groups with centroids", { exact: true })).toBeVisible();
     await expect(page.getByText("Monte Carlo price paths", { exact: true })).toBeVisible();
     await expect(page.getByText("Options chain & strategy builder", { exact: true })).toBeVisible();
-    await expect(page.locator("#example-orderbook .opencharts-orderbook-row").first()).toBeVisible();
+    await expect(page.locator("#example-orderbook .tradingcharts-orderbook-row").first()).toBeVisible();
     const payoffCanvas = page.locator("#example-payoff canvas");
     const payoffBefore = await payoffCanvas.screenshot();
-    await page.locator("#example-options-chain .opencharts-options-row button.buy").first().click();
-    await expect(page.locator("#example-options-chain .opencharts-options-legs button")).toHaveCount(1);
-    await expect(page.locator("#example-options-chain .calls .opencharts-options-row").first().locator("button.sell")).toBeDisabled();
+    await page.locator("#example-options-chain .tradingcharts-options-row button.buy").first().click();
+    await expect(page.locator("#example-options-chain .tradingcharts-options-legs button")).toHaveCount(1);
+    await expect(page.locator("#example-options-chain .calls .tradingcharts-options-row").first().locator("button.sell")).toBeDisabled();
     expect((await payoffCanvas.screenshot()).equals(payoffBefore)).toBe(false);
     await page.getByRole("button", { name: "ATM ±5" }).click();
-    await expect(page.locator("#example-options-chain .opencharts-options-strikes .opencharts-options-row")).toHaveCount(4);
+    await expect(page.locator("#example-options-chain .tradingcharts-options-strikes .tradingcharts-options-row")).toHaveCount(4);
     await page.getByRole("button", { name: "Calls" }).click();
-    await expect(page.locator("#example-options-chain .opencharts-options-table")).toHaveClass(/mode-call/);
+    await expect(page.locator("#example-options-chain .tradingcharts-options-table")).toHaveClass(/mode-call/);
     await page.locator("#example-options-chain select").selectOption("2026-03-20");
-    await expect(page.locator("#example-options-chain .opencharts-options-legs button")).toHaveCount(1);
+    await expect(page.locator("#example-options-chain .tradingcharts-options-legs button")).toHaveCount(1);
     await expect(page.locator("#intrabar-status")).toContainText("intrabar updates");
   });
 

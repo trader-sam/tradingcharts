@@ -36,9 +36,10 @@ const finite = (value: number) => Number.isFinite(value);
  */
 export function createOptionsSurface(host: HTMLElement, options: OptionSurfaceOptions = {}): OptionSurfaceHandle {
   const canvas = document.createElement("canvas");
-  canvas.className = "opencharts-options-surface";
-  canvas.setAttribute("role", "img");
-  canvas.setAttribute("aria-label", "Interactive options surface. Drag in either direction to orbit, use the wheel to zoom, and hover to inspect a point.");
+  canvas.className = "tradingcharts-options-surface";
+  canvas.tabIndex = 0;
+  canvas.setAttribute("role", "application");
+  canvas.setAttribute("aria-label", "Interactive options surface. Use arrow keys to orbit, plus or minus to zoom, or drag and scroll with a pointer.");
   host.replaceChildren(canvas);
   const context = canvas.getContext("2d")!;
   let points = options.data?.filter((point) => finite(point.strike) && finite(point.expiry) && finite(point.value)) ?? [];
@@ -253,6 +254,17 @@ export function createOptionsSurface(host: HTMLElement, options: OptionSurfaceOp
   canvas.addEventListener("pointerup", (event) => { dragStart = undefined; canvas.releasePointerCapture(event.pointerId); canvas.style.cursor = hover ? "crosshair" : "grab"; });
   canvas.addEventListener("wheel", (event) => { event.preventDefault(); zoom = Math.max(0.48, Math.min(2.4, zoom * (event.deltaY > 0 ? 0.9 : 1.1))); draw(); }, { passive: false });
   canvas.addEventListener("pointerleave", () => { if (!dragStart && hover) { hover = undefined; draw(); } });
+  canvas.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft") yaw -= 0.08;
+    else if (event.key === "ArrowRight") yaw += 0.08;
+    else if (event.key === "ArrowUp") pitch = Math.max(-1.35, pitch - 0.08);
+    else if (event.key === "ArrowDown") pitch = Math.min(1.35, pitch + 0.08);
+    else if (event.key === "+" || event.key === "=") zoom = Math.min(2.4, zoom * 1.1);
+    else if (event.key === "-" || event.key === "_") zoom = Math.max(0.48, zoom * 0.9);
+    else return;
+    event.preventDefault();
+    draw();
+  });
   resize();
 
   return {

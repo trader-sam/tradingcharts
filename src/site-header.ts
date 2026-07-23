@@ -9,7 +9,7 @@ const links: Array<[SitePage, string]> = [
   ["Benchmarks", "/benchmarks.html"],
 ];
 
-/** Replaces a page header with the shared OpenCharts navigation shell. */
+/** Replaces a page header with the shared TradingCharts navigation shell. */
 export function mountSiteHeader(
   host: HTMLElement,
   current: SitePage,

@@ -1,4 +1,4 @@
-/** Pure, dependency-free primitives used by OpenCharts and its test suite. */
+/** Pure, dependency-free primitives used by TradingCharts and its test suite. */
 export type OhlcBar = {
   time: number;
   open: number;
@@ -17,6 +17,20 @@ export type DepthChartData = {
   midTime: number;
 };
 
+function assertFiniteBar(bar: OhlcBar) {
+  if (
+    !Number.isFinite(bar.time) ||
+    !Number.isFinite(bar.open) ||
+    !Number.isFinite(bar.high) ||
+    !Number.isFinite(bar.low) ||
+    !Number.isFinite(bar.close) ||
+    (bar.volume !== undefined && !Number.isFinite(bar.volume))
+  )
+    throw new RangeError(
+      "Bars require finite time, open, high, low, close, and optional volume values.",
+    );
+}
+
 /**
  * Converts order-book levels into two cumulative, price-sorted depth curves.
  * The output is deliberately chart-agnostic: use `bars` for the numeric X
@@ -28,6 +42,8 @@ export function createDepthData(
   midPrice: number,
   startTime = 0,
 ): DepthChartData {
+  if (!Number.isFinite(midPrice) || !Number.isFinite(startTime))
+    throw new RangeError("Depth data requires finite midPrice and startTime values.");
   const valid = (level: OrderBookLevel) =>
     Number.isFinite(level.price) && Number.isFinite(level.size) && level.size >= 0;
   const cumulative = (levels: readonly OrderBookLevel[]) => {
@@ -164,6 +180,7 @@ export function macd(
 
 /** Inserts or replaces a bar by timestamp without mutating the input. */
 export function mergeBar<T extends OhlcBar>(bars: readonly T[], bar: T) {
+  assertFiniteBar(bar);
   const index = bars.findIndex((candidate) => candidate.time >= bar.time);
   if (index === -1) return [...bars, bar];
   if (bars[index].time === bar.time) {
@@ -176,6 +193,7 @@ export function mergeBar<T extends OhlcBar>(bars: readonly T[], bar: T) {
 
 /** Sorts input and deterministically keeps the latest value for duplicate timestamps. */
 export function normalizeBars<T extends OhlcBar>(bars: readonly T[]) {
+  bars.forEach(assertFiniteBar);
   return [...bars]
     .sort((a, b) => a.time - b.time)
     .reduce<T[]>((out, bar) => {

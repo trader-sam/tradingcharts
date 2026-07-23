@@ -70,7 +70,7 @@ export function createOptionsChain(host: HTMLElement, options: OptionsChainOptio
   const price = options.priceFormatter ?? ((value: number) => value.toFixed(2));
   const strike = options.strikeFormatter ?? ((value: number) => value.toFixed(0));
   const root = document.createElement("section");
-  root.className = "opencharts-options-chain";
+  root.className = "tradingcharts-options-chain";
   root.setAttribute("aria-label", "Options chain");
   host.replaceChildren(root);
 
@@ -101,7 +101,7 @@ export function createOptionsChain(host: HTMLElement, options: OptionsChainOptio
     );
     root.replaceChildren();
     const toolbar = document.createElement("div");
-    toolbar.className = "opencharts-options-toolbar";
+    toolbar.className = "tradingcharts-options-toolbar";
     const expiryLabel = document.createElement("label");
     expiryLabel.textContent = "Expiration";
     const select = document.createElement("select");
@@ -116,7 +116,7 @@ export function createOptionsChain(host: HTMLElement, options: OptionsChainOptio
     input.addEventListener("input", () => { filter = input.value.trim(); render(); });
     filterLabel.append(input);
     const range = document.createElement("div");
-    range.className = "opencharts-options-range";
+    range.className = "tradingcharts-options-range";
     const rangeValues = [Infinity, 5, 10, 20];
     rangeValues.forEach((value) => {
       const button = document.createElement("button"); button.type = "button";
@@ -127,7 +127,7 @@ export function createOptionsChain(host: HTMLElement, options: OptionsChainOptio
       range.append(button);
     });
     const mode = document.createElement("div");
-    mode.className = "opencharts-options-mode";
+    mode.className = "tradingcharts-options-mode";
     (["all", "call", "put"] as const).forEach((item) => {
       const button = document.createElement("button"); button.type = "button"; button.textContent = item === "all" ? "All" : `${item[0].toUpperCase()}${item.slice(1)}s`;
       button.classList.toggle("active", sideFilter === item);
@@ -135,7 +135,7 @@ export function createOptionsChain(host: HTMLElement, options: OptionsChainOptio
       mode.append(button);
     });
     const spotLabel = document.createElement("span");
-    spotLabel.className = "opencharts-options-spot";
+    spotLabel.className = "tradingcharts-options-spot";
     spotLabel.textContent = spot === undefined ? "Spot unavailable" : `Spot ${strike(spot)}`;
     toolbar.append(expiryLabel, filterLabel, range, mode, spotLabel);
     root.append(toolbar);
@@ -145,31 +145,31 @@ export function createOptionsChain(host: HTMLElement, options: OptionsChainOptio
     const atMoneyStrike = spotValue === undefined || !allRows.length ? undefined : allRows.reduce((nearest, row) => Math.abs(row.strike - spotValue) < Math.abs(nearest.strike - spotValue) ? row : nearest).strike;
     if (spot !== undefined && atMoneyStrike !== undefined) {
       const guide = document.createElement("div");
-      guide.className = "opencharts-options-spot-guide";
+      guide.className = "tradingcharts-options-spot-guide";
       guide.innerHTML = `<span>UNDERLYING <b>${strike(spot)}</b></span><span>Nearest listed strike <b>${strike(atMoneyStrike)}</b></span>`;
       root.append(guide);
     }
     const table = document.createElement("div");
-    table.className = `opencharts-options-table mode-${sideFilter}`;
-    const calls = document.createElement("section"); calls.className = "opencharts-options-side calls"; calls.setAttribute("aria-label", "Call options metrics; scroll horizontally for more columns");
-    const puts = document.createElement("section"); puts.className = "opencharts-options-side puts"; puts.setAttribute("aria-label", "Put options metrics; scroll horizontally for more columns");
-    const strikePane = document.createElement("section"); strikePane.className = "opencharts-options-strikes";
+    table.className = `tradingcharts-options-table mode-${sideFilter}`;
+    const calls = document.createElement("section"); calls.className = "tradingcharts-options-side calls"; calls.setAttribute("aria-label", "Call options metrics; scroll horizontally for more columns");
+    const puts = document.createElement("section"); puts.className = "tradingcharts-options-side puts"; puts.setAttribute("aria-label", "Put options metrics; scroll horizontally for more columns");
+    const strikePane = document.createElement("section"); strikePane.className = "tradingcharts-options-strikes";
     const makeSide = (type: OptionType, host: HTMLElement) => {
-      const inner = document.createElement("div"); inner.className = "opencharts-options-side-inner";
-      inner.innerHTML = `<div class="opencharts-options-head"><span>${type === "call" ? "CALL" : "PUT"} · SELL BID</span><span>${type === "call" ? "CALL" : "PUT"} · BUY ASK</span><span>IV</span><span>VOL</span><span>OI</span></div>`;
+      const inner = document.createElement("div"); inner.className = "tradingcharts-options-side-inner";
+      inner.innerHTML = `<div class="tradingcharts-options-head"><span>${type === "call" ? "CALL" : "PUT"} · SELL BID</span><span>${type === "call" ? "CALL" : "PUT"} · BUY ASK</span><span>IV</span><span>VOL</span><span>OI</span></div>`;
       host.append(inner);
       return inner;
     };
     const callRows = makeSide("call", calls);
     const putRows = makeSide("put", puts);
-    strikePane.innerHTML = `<div class="opencharts-options-head"><b>STRIKE</b></div>`;
+    strikePane.innerHTML = `<div class="tradingcharts-options-head"><b>STRIKE</b></div>`;
     rows.forEach((row) => {
       const callLine = document.createElement("div");
       const putLine = document.createElement("div");
       const strikeLine = document.createElement("div");
-      callLine.className = "opencharts-options-row";
-      putLine.className = "opencharts-options-row";
-      strikeLine.className = "opencharts-options-row";
+      callLine.className = "tradingcharts-options-row";
+      putLine.className = "tradingcharts-options-row";
+      strikeLine.className = "tradingcharts-options-row";
       if (row.strike === atMoneyStrike) { callLine.classList.add("at-money"); putLine.classList.add("at-money"); strikeLine.classList.add("at-money"); }
       const rowLegs = legs.filter((leg) => leg.expirationId === expiration.id && leg.strike === row.strike);
       if (rowLegs.length) { callLine.classList.add("selected"); putLine.classList.add("selected"); strikeLine.classList.add("selected"); }
@@ -207,8 +207,8 @@ export function createOptionsChain(host: HTMLElement, options: OptionsChainOptio
     root.append(table);
 
     const basket = document.createElement("div");
-    basket.className = "opencharts-options-basket";
-    const title = document.createElement("div"); title.className = "opencharts-options-basket-title";
+    basket.className = "tradingcharts-options-basket";
+    const title = document.createElement("div"); title.className = "tradingcharts-options-basket-title";
     const net = legs.reduce((total, leg) => total + (leg.side === "buy" ? 1 : -1) * leg.price * leg.quantity, 0);
     title.innerHTML = `<div><b>Strategy legs</b><span>${legs.length} / ${maxLegs} contracts</span></div><strong class="${net > 0 ? "debit" : net < 0 ? "credit" : "flat"}">${legs.length ? `Net ${net > 0 ? "debit" : net < 0 ? "credit" : "even"} ${price(Math.abs(net))}` : "No strategy selected"}</strong>`;
     const clear = document.createElement("button"); clear.type = "button"; clear.textContent = "Clear"; clear.disabled = legs.length === 0;
@@ -217,7 +217,7 @@ export function createOptionsChain(host: HTMLElement, options: OptionsChainOptio
     if (!legs.length) {
       const empty = document.createElement("p"); empty.textContent = "Click an ask to buy or a bid to sell. Selected contracts remain when you change expiration, making calendars and diagonals easy to compose."; basket.append(empty);
     } else {
-      const chips = document.createElement("div"); chips.className = "opencharts-options-legs";
+      const chips = document.createElement("div"); chips.className = "tradingcharts-options-legs";
       legs.forEach((leg) => {
         const chip = document.createElement("button"); chip.type = "button"; chip.className = leg.side;
         chip.textContent = `${leg.side === "buy" ? "+" : "−"}${leg.quantity} ${leg.expirationLabel} ${strike(leg.strike)} ${leg.type[0].toUpperCase()} @ ${price(leg.price)} ×`;

@@ -46,7 +46,7 @@ export function createOrderBook(
 
   const makeRow = (side: "ask" | "bid"): Row => {
     const root = document.createElement("div");
-    root.className = `opencharts-orderbook-row opencharts-orderbook-${side}`;
+    root.className = `tradingcharts-orderbook-row tradingcharts-orderbook-${side}`;
     const priceCell = document.createElement("span");
     const sizeCell = document.createElement("span");
     const totalCell = document.createElement("span");
@@ -54,10 +54,10 @@ export function createOrderBook(
     return { root, price: priceCell, size: sizeCell, total: totalCell };
   };
   const root = document.createElement("section");
-  root.className = "opencharts-orderbook";
+  root.className = "tradingcharts-orderbook";
   root.setAttribute("aria-label", "Order book");
   const header = document.createElement("div");
-  header.className = "opencharts-orderbook-header";
+  header.className = "tradingcharts-orderbook-header";
   const quote = options.quoteCurrency ?? "quote";
   ["Price", `Size (${quote})`, `Total (${quote})`].forEach((label) => {
     const cell = document.createElement("span");
@@ -66,7 +66,7 @@ export function createOrderBook(
   });
   const askRows = Array.from({ length: levels }, () => makeRow("ask"));
   const spread = document.createElement("div");
-  spread.className = "opencharts-orderbook-spread";
+  spread.className = "tradingcharts-orderbook-spread";
   const bidRows = Array.from({ length: levels }, () => makeRow("bid"));
   root.append(header, ...askRows.map((row) => row.root), spread, ...bidRows.map((row) => row.root));
   host.replaceChildren(root);

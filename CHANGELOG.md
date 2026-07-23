@@ -1,9 +1,9 @@
 # Changelog
 
-All notable changes to OpenCharts are documented here. This project follows
+All notable changes to TradingCharts are documented here. This project follows
 [Semantic Versioning](https://semver.org/) after its first stable release.
 
-## 0.1.0 - Unreleased
+## 0.1.0-alpha.1 - 2026-07-22
 
 ### Added
 
@@ -14,6 +14,9 @@ All notable changes to OpenCharts are documented here. This project follows
   continuous coordinate space.
 - Package verification, benchmark scripts, browser regression tests, and
   contributor/security documentation.
+- Explicit validation for public bar, series-point, and depth-data inputs.
+- Keyboard pan, zoom, fit, and cancel interactions for the primary chart;
+  keyboard orbit and zoom controls for options surfaces.
 
 ### Compatibility
 

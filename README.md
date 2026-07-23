@@ -1,6 +1,8 @@
-# OpenCharts
+# TradingCharts
 
-An early, browser-native financial-charting prototype: a lightweight open-source alternative to proprietary embedded chart widgets.
+A browser-native financial-charting library for Canvas-based financial and analytical visualizations. `0.1.0-alpha.1` is a public pre-release: the API is documented and tested, but may receive clearly described breaking changes before `1.0.0`.
+
+Maintained by Drift Research. Project home: [tradingcharts.xyz](https://tradingcharts.xyz).
 
 ## Explore
 
@@ -11,11 +13,11 @@ Run the demo, then open `http://127.0.0.1:5173/docs.html` for the API guide or `
 The package is prepared for npm publication. Until the first release is published, install it from a local checkout or Git URL. Once published:
 
 ```sh
-npm install opencharts
+npm install tradingcharts
 ```
 
 ```ts
-import { createChart } from "opencharts";
+import { createChart } from "tradingcharts";
 
 const chart = createChart(document.querySelector("#chart")!);
 ```
@@ -39,13 +41,28 @@ npm run dev
 
 The current prototype includes a canvas candlestick/line renderer, responsive resizing, free panning, cursor-anchored zoom, crosshair inspection with X/Y labels, drawings, generic lower panes, volume, corporate-event markers, arbitrary intraday timestamps, and a visual playground.
 
-## Proposed roadmap
+## Accessibility and browser support
+
+The main chart is keyboard focusable: use Left/Right to pan, +/− to zoom, Home
+to fit content, and Escape to cancel a drawing. Options surfaces support arrow
+keys to orbit and +/− to zoom. The DOM order-book and options-chain components
+use native controls and labels.
+
+Chromium is exercised in CI. Firefox, WebKit, mobile/touch behavior, and richer
+screen-reader data summaries are not yet release-gated; treat them as known
+pre-release limitations when adopting this version.
+
+TradingCharts is browser-only: it creates Canvas and DOM nodes immediately. In
+SSR frameworks, import and create charts from a client-only component or after
+the host element has mounted.
+
+## Roadmap
 
 1. Stabilize the public package/distribution surface and complete interaction regression tests.
-2. Add accessibility, mobile interactions, expanded visual regression coverage, and more configurable tooltip UI.
+2. Add richer screen-reader summaries, mobile interactions, expanded visual regression coverage, and more configurable tooltip UI.
 3. Add a plugin API and broaden visual regression coverage.
 
-The renderer itself has no runtime dependencies. Import `createChart(host, options)` from `opencharts` in consumers, or from `src/index.ts` while developing locally.
+The renderer itself has no runtime dependencies. Import `createChart(host, options)` from `tradingcharts` in consumers, or from `src/index.ts` while developing locally.
 
 ## Current public surface
 
@@ -64,10 +81,10 @@ The renderer itself has no runtime dependencies. Import `createChart(host, optio
 - Live ladders: `createOrderBook(host, options)` renders a preallocated order-book DOM surface with snapshot and price-level delta updates coalesced to animation frames
 - Options surfaces: `createOptionsSurface(host, options)` renders a themed, interactive 3D Canvas surface from strike, expiry, and value points
 - Options chains: `createOptionsChain(host, options)` renders a filterable expiration/strike chain with bid/ask-driven multi-leg selection and a leg-change callback
-- Drawings: `setDrawingTool(tool)`, `getDrawings()`, and `clearDrawings()`
+- Drawings: `setDrawingTool(tool)`, `getDrawings()`, `setDrawings(drawings)`, and `clearDrawings()`; returned drawings are safe snapshots for persistence
 - Lifecycle: call `destroy()` when the host chart is permanently removed
 
-This is a prototype API. We welcome issues and contribution proposals before treating these contracts as stable.
+This is a pre-release API. We welcome issues and contribution proposals before treating these contracts as stable.
 
 Custom series accept timestamped `{ time, value }` data and render as a line, histogram, area, step-area, or scatter plot. Scatter series accept the same optional `x` value as every other custom series and support `markerRadius`; use multiple series for groups, centroids, and fitted models. Area plots support `fillColor` plus an optional `negativeFillColor` for the portion below zero. They can share OHLC price coordinates or use an independent normalized scale. Named panes have independent vertical pan/zoom and draggable height, while sharing horizontal navigation. Domain-specific signals stay application-owned rather than becoming a hardcoded indicator catalog.
 
@@ -84,6 +101,12 @@ npm run release:check  # full build, unit, browser, and packed-consumer gate
 
 `npm run bench` writes a timestamped result to `benchmark-results.json`. Benchmark numbers are environment-specific; compare runs on the same machine and browser.
 
+## Publishing
+
+Maintainers should follow [PUBLISHING.md](PUBLISHING.md) before creating a
+public release. In particular, configure the final repository and vulnerability
+reporting URLs before publishing.
+
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md), follow the [Code of Conduct](CODE_OF_CONDUCT.md), review the [security policy](SECURITY.md), and use the issue templates for bug reports or feature proposals. OpenCharts is MIT licensed.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md), follow the [Code of Conduct](CODE_OF_CONDUCT.md), review the [security policy](SECURITY.md), and use the issue templates for bug reports or feature proposals. TradingCharts is MIT licensed.

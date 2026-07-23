@@ -5,10 +5,10 @@ export default defineConfig({
     emptyOutDir: false,
     lib: {
       entry: "src/index.ts",
-      name: "OpenCharts",
+      name: "TradingCharts",
       formats: ["es", "umd"],
       fileName: (format) =>
-        format === "es" ? "opencharts.js" : "opencharts.cjs",
+        format === "es" ? "tradingcharts.js" : "tradingcharts.cjs",
     },
   },
 });

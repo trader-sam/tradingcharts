@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Getting started · OpenCharts</title>
+    <title>Getting started · TradingCharts</title>
     <script type="module" src="/src/docs-examples.ts"></script>
   </head>
   <body>
@@ -12,14 +12,14 @@
       <main class="page">
         <p>GUIDE / 01</p>
         <h1>Getting started</h1>
-        <p>OpenCharts owns one responsive Canvas inside a host element. Give that host a measurable height, load your OHLC data, and release the chart when the host is permanently removed.</p>
+        <p>TradingCharts owns one responsive Canvas inside a host element. Give that host a measurable height, load your OHLC data, and release the chart when the host is permanently removed.</p>
         <div class="example"><header>LIVE EXAMPLE · OHLC</header><div class="example-chart" data-doc-example="basic"></div></div>
         <h2>Install</h2>
-        <pre>npm install opencharts</pre>
-        <p>During local development, import from <code>./src/index.ts</code>. Published consumers import from <code>opencharts</code>.</p>
+        <pre>npm install tradingcharts</pre>
+        <p>During local development, import from <code>./src/index.ts</code>. Published consumers import from <code>tradingcharts</code>.</p>
         <h2>Create a chart</h2>
         <pre>
-import { createChart, type Bar } from 'opencharts';
+import { createChart, type Bar } from 'tradingcharts';
 
 const host = document.querySelector&lt;HTMLElement&gt;('#chart')!;
 host.style.height = '420px';
@@ -32,7 +32,7 @@ const chart = createChart(host, {
 
 const bars: Bar[] = [{ time, open, high, low, close, volume }];
 chart.setData(bars);</pre>
-        <div class="note">The host controls chart size. OpenCharts observes host resizes; do not set a canvas width or height yourself.</div>
+        <div class="note">The host controls chart size. TradingCharts observes host resizes; do not set a canvas width or height yourself.</div>
         <h2>Update a live chart</h2>
         <pre>
 chart.update(nextBar);       // append newer data or replace an active timestamp

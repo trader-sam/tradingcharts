@@ -121,6 +121,29 @@ pre {
   gap: 16px;
   margin-top: 30px;
 }
+.api-reference {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.api-reference section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-content: start;
+  padding: 13px;
+  border: 1px solid #293553;
+  border-radius: 8px;
+  background: #0b1020;
+}
+.api-reference b {
+  width: 100%;
+  color: #fff;
+  font: 12px ui-monospace, monospace;
+}
+.api-reference code {
+  font-size: 12px;
+}
 .card {
   display: block;
   padding: 20px;
@@ -284,6 +307,9 @@ code {
     margin: 0;
   }
   .cards {
+    grid-template-columns: 1fr;
+  }
+  .api-reference {
     grid-template-columns: 1fr;
   }
   nav {

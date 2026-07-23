@@ -62,6 +62,11 @@ describe("core scale primitives", () => {
     expect(depth.asks.at(-1)).toMatchObject({ value: 13 });
   });
 
+  it("rejects invalid depth midpoints instead of returning an invalid typed result", () => {
+    expect(() => createDepthData([], [], Number.NaN)).toThrow(RangeError);
+    expect(() => createDepthData([], [], 100, Number.POSITIVE_INFINITY)).toThrow(RangeError);
+  });
+
   it("calculates EMA from the first value and rejects invalid periods", () => {
     expect(ema([10, 20, 30], 3)).toEqual([10, 15, 22.5]);
     expect(() => ema([1], 0)).toThrow(RangeError);
@@ -91,5 +96,10 @@ describe("live bar normalization", () => {
       { time: 10 },
       { time: 20, close: 77 },
     ]);
+  });
+
+  it("rejects non-finite bar values at the public normalization boundary", () => {
+    expect(() => normalizeBars([{ ...bar(1), close: Number.NaN }])).toThrow(RangeError);
+    expect(() => mergeBar([{ ...bar(1), volume: 1 }], { ...bar(2), volume: Number.POSITIVE_INFINITY })).toThrow(RangeError);
   });
 });

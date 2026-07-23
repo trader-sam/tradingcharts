@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>OpenCharts docs</title>
+    <title>TradingCharts docs</title>
     <script type="module" src="/src/docs-examples.ts"></script>
     <style>
       body {
@@ -117,8 +117,8 @@
         </nav>
       </header>
       <main class="page docs">
-        <p>OPENCHARTS / DOCUMENTATION</p>
-        <h1>OpenCharts</h1>
+        <p>TRADINGCHARTS / DOCUMENTATION</p>
+        <h1>TradingCharts</h1>
         <p>
           Canvas-native financial visualization primitives for the open web.
           Start with a chart, then add your own series, panes, event markers,
@@ -133,12 +133,12 @@
         <nav class="toc" aria-label="Documentation sections">
           <a href="#quick-start">Start</a><a href="#data">Data</a><a href="#streaming">Streaming</a
           ><a href="#series">Series</a><a href="#panes">Panes</a
-          ><a href="#axes">Axes</a><a href="#depth">Depth</a><a href="#orderbook">Order book</a><a href="#events">Events</a><a href="#trade-markers">Trades</a><a href="#drawings">Drawings</a
+          ><a href="#axes">Axes</a><a href="#api-reference">API</a><a href="#depth">Depth</a><a href="#orderbook">Order book</a><a href="#events">Events</a><a href="#trade-markers">Trades</a><a href="#drawings">Drawings</a
           ><a href="#options-surface">Options surface</a><a href="#options-chain">Options chain</a><a href="#options">Options</a><a href="#quality">Quality</a>
         </nav>
         <h2 id="quick-start">Quick start</h2>
         <pre>
-import { createChart } from 'opencharts';
+import { createChart } from 'tradingcharts';
 
 const chart = createChart(host);
 chart.setData([{ time, open, high, low, close, volume }]);</pre>
@@ -157,6 +157,14 @@ chart.updateMany(bars);</pre>
           incoming bars preserve the viewport; at the live edge, the chart follows
           the latest bar.
         </p>
+        <h2 id="api-reference">Compact API reference</h2>
+        <div class="api-reference">
+          <section><b>Chart data</b><code>setData</code><code>update</code><code>updateMany</code><code>fitContent</code><code>setType</code></section>
+          <section><b>Series and panes</b><code>addSeries</code><code>createSeries</code><code>setSeriesData</code><code>updateSeries</code><code>removeSeries</code><code>addPane</code><code>removePane</code></section>
+          <section><b>Layers and drawings</b><code>setVolumeVisible</code><code>setEvents</code><code>setTradeMarkers</code><code>setOverlays</code><code>setDrawingTool</code><code>getDrawings</code><code>setDrawings</code><code>clearDrawings</code></section>
+          <section><b>Lifecycle and components</b><code>destroy</code><code>createDepthData</code><code>createOrderBook</code><code>createOptionsSurface</code><code>createOptionsChain</code><code>ema</code><code>macd</code></section>
+        </div>
+        <p>All chart mutators return the chart for chaining. Bars, depth inputs, and series points must use finite numeric values; invalid public inputs throw a <code>RangeError</code>. TradingCharts is browser-only, so initialize it from client-side code after its host exists.</p>
         <h2 id="series">Plot your own data</h2>
         <pre>
 chart.addSeries({
@@ -231,7 +239,7 @@ chart.setData([{ time: 0, x: 'A', open, high, low, close }]);</pre>
         </p>
         <h2 id="depth">Order-book depth</h2>
         <pre>
-import { createDepthData } from 'opencharts';
+import { createDepthData } from 'tradingcharts';
 
 const depth = createDepthData(bids, asks, midPrice);
 chart.setData(depth.bars).setXAxis({
@@ -258,7 +266,7 @@ chart.setOverlays([{ type: 'vertical-line', time: depth.midTime,
         </p>
         <h2 id="orderbook">Live order-book ladder</h2>
         <pre>
-import { createOrderBook } from 'opencharts';
+import { createOrderBook } from 'tradingcharts';
 
 const book = createOrderBook(host, {
   levels: 10,
@@ -279,7 +287,7 @@ book.update({ asks: [{ price: 61983, size: 0 }] });</pre>
         </p>
         <h2 id="options-surface">3D options surface</h2>
         <pre>
-import { createOptionsSurface } from 'opencharts';
+import { createOptionsSurface } from 'tradingcharts';
 
 const surface = createOptionsSurface(host, {
   strikeLabel: 'MONEYNESS (S / K)',
@@ -303,7 +311,7 @@ surface.setData([
         </p>
         <h2 id="options-chain">Options chain and multi-leg selection</h2>
         <pre>
-import { createOptionsChain } from 'opencharts';
+import { createOptionsChain } from 'tradingcharts';
 
 const chain = createOptionsChain(host, {
   spot: 102.4,
@@ -417,10 +425,14 @@ chart.setEvents([{
 chart.setDrawingTool('trendline');
 chart.setDrawingTool('horizontal-line');
 chart.setDrawingTool('free-draw');
+const saved = chart.getDrawings();
+chart.setDrawings(saved); // restore persisted drawings after panes are created
 chart.clearDrawings();</pre>
         <p>
           Tools work in both price and user-created lower panes. Use
-          <code>getDrawings()</code> to persist results.
+          <code>getDrawings()</code> to obtain a safe persistence snapshot, then
+          <code>setDrawings()</code> to restore it. Create any referenced lower
+          panes before restoring their drawings.
         </p>
         <h2 id="options">Options</h2>
         <pre>

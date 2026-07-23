@@ -1,6 +1,6 @@
-# Contributing to OpenCharts
+# Contributing to TradingCharts
 
-Thanks for helping improve OpenCharts. Contributions of bug fixes, tests,
+Thanks for helping improve TradingCharts. Contributions of bug fixes, tests,
 documentation, examples, and focused features are welcome.
 
 ## Getting started

@@ -222,6 +222,59 @@ function drawOhlcCard(
   c.restore();
 }
 
+function assertSeriesPoint(point: SeriesPoint) {
+  if (
+    !Number.isFinite(point.time) ||
+    !Number.isFinite(point.value) ||
+    (point.x !== undefined &&
+      typeof point.x !== "string" &&
+      !Number.isFinite(point.x))
+  )
+    throw new RangeError(
+      "Series points require finite time and value fields, plus an optional string or finite numeric x field.",
+    );
+}
+
+function cloneDrawing(drawing: ChartDrawing): ChartDrawing {
+  if (drawing.type === "horizontal-line") return { ...drawing };
+  if (drawing.type === "trendline")
+    return {
+      ...drawing,
+      anchors: [{ ...drawing.anchors[0] }, { ...drawing.anchors[1] }],
+    };
+  return { ...drawing, anchors: drawing.anchors.map((anchor) => ({ ...anchor })) };
+}
+
+function assertDrawing(
+  drawing: ChartDrawing,
+  panes: ReadonlyMap<string, unknown>,
+  seenIds: Set<string>,
+) {
+  if (!drawing.id || seenIds.has(drawing.id))
+    throw new RangeError("Drawings require unique, non-empty ids.");
+  seenIds.add(drawing.id);
+  const pane = drawing.pane ?? "main";
+  if (pane !== "main" && !panes.has(pane))
+    throw new RangeError(`Unknown drawing pane: ${pane}. Call addPane() first.`);
+  if (drawing.type === "horizontal-line") {
+    if (!Number.isFinite(drawing.price))
+      throw new RangeError("Horizontal-line drawings require a finite price.");
+    return;
+  }
+  const anchors = drawing.anchors;
+  if (
+    (drawing.type === "trendline" && anchors.length !== 2) ||
+    (drawing.type === "free-draw" && anchors.length < 2) ||
+    anchors.some(
+      (anchor) =>
+        !Number.isFinite(anchor.logical) || !Number.isFinite(anchor.price),
+    )
+  )
+    throw new RangeError(
+      "Trendlines require two finite anchors; free drawings require at least two finite anchors.",
+    );
+}
+
 function drawOhlcLegend(
   c: CanvasRenderingContext2D,
   b: Bar,
@@ -336,6 +389,12 @@ export class OpenChart {
     };
     this.canvas = document.createElement("canvas");
     this.canvas.className = "openchart-canvas";
+    this.canvas.tabIndex = 0;
+    this.canvas.setAttribute("role", "application");
+    this.canvas.setAttribute(
+      "aria-label",
+      "Interactive financial chart. Use left and right arrow keys to pan, plus or minus to zoom, Home to fit data, and Escape to cancel a drawing.",
+    );
     this.ctx = this.canvas.getContext("2d")!;
     this.eventPopup = document.createElement("div");
     this.eventPopup.className = "openchart-event-popup";
@@ -495,6 +554,7 @@ export class OpenChart {
   }
   /** Creates or replaces a user-owned numeric series. No indicator formulas are built in. */
   addSeries(options: CustomSeriesOptions) {
+    if (!options.id) throw new RangeError("Series ids must be non-empty strings.");
     if (
       options.pane &&
       options.pane !== "main" &&
@@ -578,15 +638,8 @@ export class OpenChart {
     const series = this.series.get(id);
     if (!series)
       throw new Error(`Unknown series: ${id}. Call addSeries() first.`);
+    data.forEach(assertSeriesPoint);
     series.data = [...data]
-      .filter(
-        (point) =>
-          Number.isFinite(point.time) &&
-          Number.isFinite(point.value) &&
-          (point.x === undefined ||
-            typeof point.x === "string" ||
-            Number.isFinite(point.x)),
-      )
       .sort((a, b) => a.time - b.time);
     if (!this.hasPrimaryData) this.rebuildSeriesDomain();
     this.draw();
@@ -597,6 +650,7 @@ export class OpenChart {
     const series = this.series.get(id);
     if (!series)
       throw new Error(`Unknown series: ${id}. Call addSeries() first.`);
+    assertSeriesPoint(point);
     let lo = 0,
       hi = series.data.length;
     while (lo < hi) {
@@ -743,7 +797,16 @@ export class OpenChart {
     return this.tool;
   }
   getDrawings() {
-    return [...this.drawings];
+    return this.drawings.map(cloneDrawing);
+  }
+  /** Replaces caller-persisted drawings. Create any referenced panes first. */
+  setDrawings(drawings: ChartDrawing[]) {
+    const seenIds = new Set<string>();
+    drawings.forEach((drawing) => assertDrawing(drawing, this.panes, seenIds));
+    this.drawings = drawings.map(cloneDrawing);
+    this.draft = undefined;
+    this.draw();
+    return this;
   }
   clearDrawings() {
     this.drawings = [];
@@ -1163,6 +1226,40 @@ export class OpenChart {
     else this.canvas.style.cursor = "crosshair";
   }
   private bind() {
+    this.canvas.addEventListener("keydown", (event) => {
+      const pan = Math.max(1, this.visible * 0.12);
+      let changed = false;
+      if (event.key === "ArrowLeft") {
+        if (this.numericXAxisActive()) this.numericXCenter -= this.numericXSpan * 0.12;
+        else this.offset = Math.min(Math.max(0, this.bars.length - this.visible), this.offset + pan);
+        changed = true;
+      } else if (event.key === "ArrowRight") {
+        if (this.numericXAxisActive()) this.numericXCenter += this.numericXSpan * 0.12;
+        else this.offset = Math.max(0, this.offset - pan);
+        changed = true;
+      } else if (event.key === "+" || event.key === "=") {
+        if (this.numericXAxisActive()) this.numericXSpan = Math.max(this.numericXBaseSpan * 0.00001, this.numericXSpan * 0.85);
+        else this.visible = Math.max(1, this.visible * 0.85);
+        changed = true;
+      } else if (event.key === "-" || event.key === "_") {
+        if (this.numericXAxisActive()) this.numericXSpan = Math.min(this.numericXBaseSpan * 1_000_000, this.numericXSpan / 0.85);
+        else this.visible = Math.min(this.maxVisible(), this.visible / 0.85);
+        changed = true;
+      } else if (event.key === "Home") {
+        this.fitContent();
+        event.preventDefault();
+        return;
+      } else if (event.key === "Escape") {
+        this.tool = "none";
+        this.draft = undefined;
+        this.closeEventPopup();
+        changed = true;
+      }
+      if (changed) {
+        event.preventDefault();
+        this.draw();
+      }
+    });
     this.canvas.addEventListener("pointermove", (e) => {
       const r = this.canvas.getBoundingClientRect();
       this.pointer = { x: e.clientX - r.left, y: e.clientY - r.top };
