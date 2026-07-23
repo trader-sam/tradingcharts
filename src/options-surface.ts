@@ -38,7 +38,9 @@ export function createOptionsSurface(host: HTMLElement, options: OptionSurfaceOp
   const canvas = document.createElement("canvas");
   canvas.className = "tradingcharts-options-surface";
   canvas.tabIndex = 0;
-  canvas.setAttribute("role", "application");
+  canvas.setAttribute("role", "region");
+  canvas.setAttribute("aria-roledescription", "options surface");
+  canvas.style.touchAction = "none";
   canvas.setAttribute("aria-label", "Interactive options surface. Use arrow keys to orbit, plus or minus to zoom, or drag and scroll with a pointer.");
   host.replaceChildren(canvas);
   const context = canvas.getContext("2d")!;
@@ -251,7 +253,10 @@ export function createOptionsSurface(host: HTMLElement, options: OptionSurfaceOp
     if (hover !== next) { hover = next; canvas.style.cursor = hover ? "crosshair" : "grab"; draw(); }
   });
   canvas.addEventListener("pointerdown", (event) => { dragStart = { x: event.clientX, y: event.clientY, yaw, pitch }; canvas.setPointerCapture(event.pointerId); canvas.style.cursor = "grabbing"; });
-  canvas.addEventListener("pointerup", (event) => { dragStart = undefined; canvas.releasePointerCapture(event.pointerId); canvas.style.cursor = hover ? "crosshair" : "grab"; });
+  const endDrag = (event?: PointerEvent) => { dragStart = undefined; if (event && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); canvas.style.cursor = hover ? "crosshair" : "grab"; };
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+  canvas.addEventListener("lostpointercapture", endDrag);
   canvas.addEventListener("wheel", (event) => { event.preventDefault(); zoom = Math.max(0.48, Math.min(2.4, zoom * (event.deltaY > 0 ? 0.9 : 1.1))); draw(); }, { passive: false });
   canvas.addEventListener("pointerleave", () => { if (!dragStart && hover) { hover = undefined; draw(); } });
   canvas.addEventListener("keydown", (event) => {

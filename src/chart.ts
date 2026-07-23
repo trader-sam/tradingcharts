@@ -135,11 +135,24 @@ export type ChartOptions = {
   ohlcLegend?: { title?: string; showVolume?: boolean };
   /** Caps Canvas backing-store density; set to `1` to prioritize throughput. */
   maxPixelRatio?: number;
+  /** Fine-grained input behavior for embedded and touch-first charts. */
+  interaction?: {
+    mouseWheel?: boolean;
+    dragPan?: boolean;
+    /** CSS touch-action policy. `pan-y` preserves page scrolling during vertical drags. */
+    touchAction?: "auto" | "none" | "pan-y";
+  };
   xAxis?: XAxisOptions;
   padding?: { top?: number; bottom?: number; left?: number; right?: number };
 };
-type ResolvedOptions = Omit<Required<ChartOptions>, "padding"> & {
+/** Inclusive bar-index viewport for time and ordinal charts. */
+export type LogicalRange = { from: number; to: number };
+/** Inclusive UTC-millisecond viewport for time-axis charts. */
+export type TimeRange = { from: number; to: number };
+export type VisibleRangeChangeHandler = (range: LogicalRange | null) => void;
+type ResolvedOptions = Omit<Required<ChartOptions>, "padding" | "interaction"> & {
   padding: Required<NonNullable<ChartOptions["padding"]>>;
+  interaction: Required<NonNullable<ChartOptions["interaction"]>>;
 };
 const defaults: ResolvedOptions = {
   background: "#0b1020",
@@ -153,6 +166,7 @@ const defaults: ResolvedOptions = {
   ohlcTooltip: "floating",
   ohlcLegend: { title: "", showVolume: true },
   maxPixelRatio: Infinity,
+  interaction: { mouseWheel: true, dragPan: true, touchAction: "pan-y" },
   xAxis: { type: "time" },
   padding: { top: 18, bottom: 32, left: 10, right: 68 },
 };
@@ -316,7 +330,7 @@ function drawOhlcLegend(
   c.restore();
 }
 
-export class OpenChart {
+export class TradingChart {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private eventPopup: HTMLDivElement;
@@ -356,6 +370,8 @@ export class OpenChart {
   private events: ChartEvent[] = [];
   private tradeMarkers: TradeMarker[] = [];
   private overlays: ChartOverlay[] = [];
+  private visibleRangeListeners = new Set<VisibleRangeChangeHandler>();
+  private visibleRangeKey = "";
   private series = new Map<
     string,
     Required<Omit<CustomSeriesOptions, "id">> & {
@@ -386,18 +402,21 @@ export class OpenChart {
       ...defaults,
       ...options,
       padding: { ...defaults.padding, ...options.padding },
+      interaction: { ...defaults.interaction, ...options.interaction },
     };
     this.canvas = document.createElement("canvas");
-    this.canvas.className = "openchart-canvas";
+    this.canvas.className = "tradingchart-canvas";
     this.canvas.tabIndex = 0;
-    this.canvas.setAttribute("role", "application");
+    this.canvas.setAttribute("role", "region");
+    this.canvas.setAttribute("aria-roledescription", "financial chart");
+    this.canvas.style.touchAction = this.opts.interaction.touchAction;
     this.canvas.setAttribute(
       "aria-label",
-      "Interactive financial chart. Use left and right arrow keys to pan, plus or minus to zoom, Home to fit data, and Escape to cancel a drawing.",
+      "Interactive financial chart. Use left and right arrow keys to pan, plus or minus to zoom, Home to fit data, End to return to live data, and Escape to cancel a drawing.",
     );
     this.ctx = this.canvas.getContext("2d")!;
     this.eventPopup = document.createElement("div");
-    this.eventPopup.className = "openchart-event-popup";
+    this.eventPopup.className = "tradingchart-event-popup";
     this.eventPopup.hidden = true;
     Object.assign(this.eventPopup.style, {
       position: "absolute",
@@ -412,7 +431,7 @@ export class OpenChart {
       font: "13px/1.45 system-ui,sans-serif",
     });
     this.overlayControl = document.createElement("div");
-    this.overlayControl.className = "openchart-overlay-control";
+    this.overlayControl.className = "tradingchart-overlay-control";
     this.overlayControl.hidden = true;
     Object.assign(this.overlayControl.style, {
       position: "absolute",
@@ -639,8 +658,10 @@ export class OpenChart {
     if (!series)
       throw new Error(`Unknown series: ${id}. Call addSeries() first.`);
     data.forEach(assertSeriesPoint);
-    series.data = [...data]
-      .sort((a, b) => a.time - b.time);
+    const ordered = [...data].sort((a, b) => a.time - b.time);
+    series.data = ordered.filter(
+      (point, index) => index === ordered.length - 1 || point.time !== ordered[index + 1].time,
+    );
     if (!this.hasPrimaryData) this.rebuildSeriesDomain();
     this.draw();
     return this;
@@ -706,7 +727,7 @@ export class OpenChart {
         Object.assign(settings.style, { border: "0", borderLeft: "1px solid #3b4d6b", background: "transparent", color: "#a9c8ff", padding: "0 7px", cursor: "pointer", font: "inherit" });
         settings.addEventListener("click", () => {
           this.hideOverlayControl();
-          this.host.dispatchEvent(new CustomEvent("openchartoverlaysettings", { detail: target }));
+          this.host.dispatchEvent(new CustomEvent("tradingchartoverlaysettings", { detail: target }));
         });
         this.overlayControl.append(label, settings);
       } else this.overlayControl.append(label);
@@ -720,7 +741,7 @@ export class OpenChart {
         this.hideOverlayControl();
         if (target.kind === "volume") this.setVolumeVisible(false);
         else if (target.id) this.removeSeries(target.id);
-        this.host.dispatchEvent(new CustomEvent("openchartoverlayremove", { detail: target }));
+        this.host.dispatchEvent(new CustomEvent("tradingchartoverlayremove", { detail: target }));
       });
       this.overlayControl.append(remove);
     }
@@ -796,6 +817,58 @@ export class OpenChart {
   getDrawingTool() {
     return this.tool;
   }
+  /** Returns the current time/ordinal viewport, or null for a continuous numeric X axis. */
+  getVisibleLogicalRange(): LogicalRange | null {
+    if (this.numericXAxisActive() || !this.bars.length) return null;
+    const { windowStart } = this.window();
+    const from = Math.max(0, Math.ceil(windowStart));
+    const to = Math.min(this.bars.length - 1, Math.floor(windowStart + this.visible - 0.0001));
+    return from <= to ? { from, to } : null;
+  }
+  /** Restores a time/ordinal viewport using inclusive bar indexes. */
+  setVisibleLogicalRange(range: LogicalRange) {
+    if (this.numericXAxisActive())
+      throw new Error("Logical ranges are unavailable for a continuous numeric X axis.");
+    if (!Number.isFinite(range.from) || !Number.isFinite(range.to) || range.from > range.to)
+      throw new RangeError("Visible logical ranges require finite from <= to values.");
+    if (!this.bars.length) return this;
+    const from = Math.max(0, Math.min(this.bars.length - 1, Math.floor(range.from)));
+    const to = Math.max(from, Math.min(this.bars.length - 1, Math.floor(range.to)));
+    this.visible = Math.max(1, to - from + 1);
+    this.offset = this.bars.length - 1 - to;
+    if (!this.pricePanUnlocked) this.resetPriceRange();
+    this.draw();
+    return this;
+  }
+  /** Returns the loaded timestamps spanning the visible logical viewport. */
+  getVisibleRange(): TimeRange | null {
+    const range = this.getVisibleLogicalRange();
+    if (!range) return null;
+    return { from: this.bars[range.from].time, to: this.bars[range.to].time };
+  }
+  /** Restores a time-axis viewport by selecting loaded bars within an inclusive time interval. */
+  setVisibleRange(range: TimeRange) {
+    if (!Number.isFinite(range.from) || !Number.isFinite(range.to) || range.from > range.to)
+      throw new RangeError("Visible time ranges require finite from <= to values.");
+    if (!this.bars.length) return this;
+    const from = this.logicalAtOrAfter(range.from);
+    const to = this.logicalAtOrBefore(range.to);
+    return this.setVisibleLogicalRange({ from, to: Math.max(from, to) });
+  }
+  /** Moves a time/ordinal chart back to its newest loaded bar. */
+  scrollToRealTime() {
+    if (!this.numericXAxisActive()) {
+      this.offset = 0;
+      if (!this.pricePanUnlocked) this.resetPriceRange();
+      this.draw();
+    }
+    return this;
+  }
+  /** Observe distinct visible logical viewport changes. Returns an unsubscribe function. */
+  subscribeVisibleRangeChange(listener: VisibleRangeChangeHandler) {
+    this.visibleRangeListeners.add(listener);
+    return () => this.visibleRangeListeners.delete(listener);
+  }
   getDrawings() {
     return this.drawings.map(cloneDrawing);
   }
@@ -820,6 +893,7 @@ export class OpenChart {
     this.resetNumericXRange();
     this.resetPriceRange();
     this.draw();
+    return this;
   }
   destroy() {
     this.observer.disconnect();
@@ -876,6 +950,16 @@ export class OpenChart {
       else hi = mid;
     }
     return lo;
+  }
+  private logicalAtOrBefore(time: number) {
+    let lo = 0,
+      hi = this.bars.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (this.bars[mid].time <= time) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo - 1;
   }
   /** Restrict a sorted custom series before converting timestamps to logical points. */
   private visibleSeriesPoints(data: SeriesPoint[], start: number, end: number) {
@@ -1024,7 +1108,7 @@ export class OpenChart {
   private finishDrawing() {
     this.tool = "none";
     this.draft = undefined;
-    this.host.dispatchEvent(new CustomEvent("openchartdrawingcomplete"));
+    this.host.dispatchEvent(new CustomEvent("tradingchartdrawingcomplete"));
     this.updateCursor();
   }
   private resize() {
@@ -1195,7 +1279,7 @@ export class OpenChart {
       action.addEventListener("click", () => {
         popup.onAction?.(hit.event);
         this.host.dispatchEvent(
-          new CustomEvent("opencharteventaction", { detail: hit.event }),
+          new CustomEvent("tradingcharteventaction", { detail: hit.event }),
         );
       });
       this.eventPopup.append(action);
@@ -1205,7 +1289,7 @@ export class OpenChart {
     this.eventPopup.style.left = `${Math.max(8, Math.min(hit.x + 14, a.w - 228))}px`;
     this.eventPopup.style.top = `${Math.max(8, hit.y - 110)}px`;
     this.host.dispatchEvent(
-      new CustomEvent("opencharteventclick", { detail: hit.event }),
+      new CustomEvent("tradingcharteventclick", { detail: hit.event }),
     );
   }
   private updateCursor() {
@@ -1247,6 +1331,10 @@ export class OpenChart {
         changed = true;
       } else if (event.key === "Home") {
         this.fitContent();
+        event.preventDefault();
+        return;
+      } else if (event.key === "End") {
+        this.scrollToRealTime();
         event.preventDefault();
         return;
       } else if (event.key === "Escape") {
@@ -1486,6 +1574,7 @@ export class OpenChart {
         this.draw();
         return;
       }
+      if (this.tool === "none" && !this.opts.interaction.dragPan) return;
       const eventHit = this.tool === "none" ? this.eventAt(this.pointer.x, this.pointer.y) : null;
       if (eventHit) {
         this.openEventPopup(eventHit);
@@ -1580,9 +1669,19 @@ export class OpenChart {
       this.updateCursor();
       this.draw();
     });
+    const cancelGesture = () => {
+      if (!this.gesture && !this.draft) return;
+      this.gesture = undefined;
+      this.draft = undefined;
+      this.updateCursor();
+      this.draw();
+    };
+    this.canvas.addEventListener("pointercancel", cancelGesture);
+    this.canvas.addEventListener("lostpointercapture", cancelGesture);
     this.canvas.addEventListener(
       "wheel",
       (e) => {
+        if (!this.opts.interaction.mouseWheel) return;
         e.preventDefault();
         const r = this.canvas.getBoundingClientRect(),
           x = e.clientX - r.left,
@@ -1713,11 +1812,19 @@ export class OpenChart {
   }
   /** Coalesce bursts of input and data updates into one browser paint. */
   private draw() {
+    this.emitVisibleRangeChange();
     if (this.renderFrame !== undefined) return;
     this.renderFrame = requestAnimationFrame(() => {
       this.renderFrame = undefined;
       this.drawNow();
     });
+  }
+  private emitVisibleRangeChange() {
+    const range = this.getVisibleLogicalRange();
+    const key = range ? `${range.from}:${range.to}` : "null";
+    if (key === this.visibleRangeKey) return;
+    this.visibleRangeKey = key;
+    for (const listener of this.visibleRangeListeners) listener(range && { ...range });
   }
   private drawNow() {
     const layout = this.layout(),
@@ -2738,7 +2845,7 @@ export class OpenChart {
   }
 }
 export function createChart(host: HTMLElement, options?: ChartOptions) {
-  return new OpenChart(host, options);
+  return new TradingChart(host, options);
 }
 import {
   ema,

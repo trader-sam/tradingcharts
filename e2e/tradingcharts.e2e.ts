@@ -56,7 +56,7 @@ test.describe("TradingCharts demo", () => {
     });
     await mainCanvas.click({ position: marker });
 
-    const popup = page.locator("#chart .openchart-event-popup");
+    const popup = page.locator("#chart .tradingchart-event-popup");
     await expect(popup).toBeVisible();
     await expect(popup).toContainText("ACME Q4 earnings");
     await expect(popup.getByRole("button", { name: "View earnings" })).toBeVisible();
@@ -105,7 +105,7 @@ test.describe("TradingCharts demo", () => {
     await page.goto("/");
     const chart = page.locator("#chart canvas");
     await chart.focus();
-    await expect(chart).toHaveAttribute("role", "application");
+    await expect(chart).toHaveAttribute("role", "region");
     const before = await chart.screenshot();
     await page.keyboard.press("ArrowLeft");
     expect((await chart.screenshot()).equals(before)).toBe(false);
@@ -113,7 +113,7 @@ test.describe("TradingCharts demo", () => {
     await page.goto("/examples.html");
     const surface = page.locator("#example-surface canvas");
     await surface.focus();
-    await expect(surface).toHaveAttribute("role", "application");
+    await expect(surface).toHaveAttribute("role", "region");
     const surfaceBefore = await surface.screenshot();
     await page.keyboard.press("ArrowRight");
     expect((await surface.screenshot()).equals(surfaceBefore)).toBe(false);
@@ -141,6 +141,46 @@ test.describe("TradingCharts demo", () => {
       return { isolated, destroyed };
     });
     expect(result).toEqual({ isolated: true, destroyed: true });
+  });
+
+  test("controls and observes a consumer chart viewport", async ({ page }) => {
+    await page.goto("/");
+    const result = await page.evaluate(async () => {
+      const { createChart } = await import("/src/index.ts");
+      const host = document.createElement("div");
+      host.style.cssText = "width: 640px; height: 320px";
+      document.body.append(host);
+      const chart = createChart(host).setData(
+        Array.from({ length: 12 }, (_, index) => ({
+          time: index * 1_000,
+          open: index,
+          high: index + 2,
+          low: index - 1,
+          close: index + 1,
+        })),
+      );
+      const observed: Array<{ from: number; to: number } | null> = [];
+      const unsubscribe = chart.subscribeVisibleRangeChange((range) => observed.push(range));
+      chart.setVisibleLogicalRange({ from: 2, to: 5 });
+      const logical = chart.getVisibleLogicalRange();
+      const time = chart.getVisibleRange();
+      chart.setVisibleRange({ from: 4_000, to: 7_000 });
+      const restored = chart.getVisibleLogicalRange();
+      chart.scrollToRealTime();
+      const live = chart.getVisibleLogicalRange();
+      unsubscribe();
+      chart.setVisibleLogicalRange({ from: 0, to: 1 });
+      const interaction = host.querySelector("canvas")?.style.touchAction;
+      chart.destroy();
+      host.remove();
+      return { logical, time, restored, live, observed, interaction };
+    });
+    expect(result.logical).toEqual({ from: 2, to: 5 });
+    expect(result.time).toEqual({ from: 2_000, to: 5_000 });
+    expect(result.restored).toEqual({ from: 4, to: 7 });
+    expect(result.live).toEqual({ from: 8, to: 11 });
+    expect(result.observed).toEqual([{ from: 2, to: 5 }, { from: 4, to: 7 }, { from: 8, to: 11 }]);
+    expect(result.interaction).toBe("pan-y");
   });
 
   test("keeps the public documentation guides and component reference reachable", async ({ page }) => {

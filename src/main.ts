@@ -175,7 +175,7 @@ document.querySelectorAll<HTMLButtonElement>("[data-draw]").forEach(
 );
 document
   .querySelector<HTMLElement>("#chart")!
-  .addEventListener("openchartdrawingcomplete", () =>
+  .addEventListener("tradingchartdrawingcomplete", () =>
     document
       .querySelectorAll("[data-draw]")
       .forEach((item) => item.classList.remove("active")),

@@ -1,6 +1,6 @@
 export {
   createChart,
-  OpenChart,
+  TradingChart,
   type Bar,
   type ChartDrawing,
   type ChartEvent,

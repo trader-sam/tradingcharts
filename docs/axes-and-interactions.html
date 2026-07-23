@@ -40,6 +40,18 @@ chart.setXAxis({ type: 'ordinal', formatter: (value) => `Contract ${value}` });<
 chart.fitContent();
 chart.setType('line');
 chart.setDrawingTool('trendline');</pre>
+        <h2>Synchronize charts and load history</h2>
+        <pre>
+const unsubscribe = chart.subscribeVisibleRangeChange((range) => {
+  if (range &amp;&amp; range.from &lt; 20) loadEarlierBars();
+});
+
+chart.setVisibleLogicalRange({ from: 120, to: 180 });
+chart.setVisibleRange({ from: Date.UTC(2026, 0, 1), to: Date.UTC(2026, 0, 31) });
+chart.scrollToRealTime();
+unsubscribe();</pre>
+        <p>Logical and time ranges are intentionally available for time and ordinal charts. A continuous numeric X axis has its own coordinate viewport, so these methods return <code>null</code> rather than pretending bar indexes are numeric positions.</p>
+        <p>Charts use <code>touchAction: 'pan-y'</code> by default: vertical touch movement remains available to the surrounding page, while horizontal chart gestures work normally. Use <code>interaction</code> to disable wheel or drag navigation, or choose a different touch-action policy for a dedicated chart surface.</p>
         <p><a href="/docs.html">Back to the complete API overview →</a></p>
       </main>
     </div>

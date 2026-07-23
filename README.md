@@ -68,9 +68,11 @@ The renderer itself has no runtime dependencies. Import `createChart(host, optio
 
 - Bars with optional volume: `setData(bars)`, `update(bar)`, `updateMany(bars)`, and `setVolumeVisible(true)`
 - User-defined plots: `addPane(options)`, `addSeries(options)`, `setSeriesData(id, points)`, `updateSeries(id, point)`, and `removeSeries(id)`; points accept `{ time, value, x? }` and can establish a series-only numeric or ordinal domain without placeholder OHLC bars. Set a series `label` and leave `removable` enabled to expose its hover removal control.
-- Overlay controls: hovering the fixed `Vol.` legend or a removable main-pane series opens a compact floating control with a built-in Remove action. Consumers can observe removals with the `openchartoverlayremove` event.
+- Overlay controls: hovering the fixed `Vol.` legend or a removable main-pane series opens a compact floating control with a built-in Remove action. Consumers can observe removals with the `tradingchartoverlayremove` event.
 - Ergonomic series handles: `createSeries(options)` returns `{ id, setData, update, remove }`
 - X axes: `setXAxis({ type: 'time' | 'numeric' | 'ordinal', formatter })`; bars can supply an optional `x` display value
+- Viewport control: `getVisibleLogicalRange()`, `setVisibleLogicalRange(range)`, `getVisibleRange()`, `setVisibleRange(range)`, `scrollToRealTime()`, and `subscribeVisibleRangeChange(listener)` support synchronized time/ordinal charts and historical-data loading. Continuous numeric axes deliberately return `null` for logical/time ranges.
+- Interaction policy: `interaction: { mouseWheel, dragPan, touchAction }` lets embedded charts preserve vertical page scrolling (`touchAction: 'pan-y'`, the default) while retaining horizontal chart gestures. Pointer cancellation is handled safely.
 - OHLC inspection: `ohlcTooltip: 'floating'` (default), `'fixed'`, or `false`; fixed legends accept `ohlcLegend: { title, showVolume }` and update from the crosshair without moving
 - Custom-only charts: `primarySeriesVisible: false` and `ohlcTooltip: false`; series types are `line`, `histogram`, `area`, `step-area`, and `scatter`
 - High-DPI control: `maxPixelRatio` caps Canvas backing-store density (for example, `maxPixelRatio: 1` for dense dashboard grids)
@@ -82,7 +84,7 @@ The renderer itself has no runtime dependencies. Import `createChart(host, optio
 - Options surfaces: `createOptionsSurface(host, options)` renders a themed, interactive 3D Canvas surface from strike, expiry, and value points
 - Options chains: `createOptionsChain(host, options)` renders a filterable expiration/strike chain with bid/ask-driven multi-leg selection and a leg-change callback
 - Drawings: `setDrawingTool(tool)`, `getDrawings()`, `setDrawings(drawings)`, and `clearDrawings()`; returned drawings are safe snapshots for persistence
-- Lifecycle: call `destroy()` when the host chart is permanently removed
+- Lifecycle: call `destroy()` when the host chart is permanently removed; `fitContent()` and every other chart mutator are chainable
 
 This is a pre-release API. We welcome issues and contribution proposals before treating these contracts as stable.
 

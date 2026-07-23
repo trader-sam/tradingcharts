@@ -48,10 +48,10 @@ async function verifyBrowserConsumer(consumer) {
     });
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`http://127.0.0.1:${address.port}`);
-    await page.waitForSelector(".openchart-canvas");
+    await page.waitForSelector(".tradingchart-canvas");
     if (errors.length) throw new Error(`Packed browser consumer failed: ${errors.join("\n")}`);
     await page.evaluate(() => window.chart.destroy());
-    if (await page.locator(".openchart-canvas").count())
+    if (await page.locator(".tradingchart-canvas").count())
       throw new Error("Packed browser consumer did not destroy its chart.");
   } finally {
     await browser.close();
