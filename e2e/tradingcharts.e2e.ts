@@ -183,6 +183,60 @@ test.describe("TradingCharts demo", () => {
     expect(result.interaction).toBe("pan-y");
   });
 
+  test("converts chart coordinates and publishes isolated crosshair snapshots", async ({ page }) => {
+    await page.goto("/");
+    const result = await page.evaluate(async () => {
+      const { createChart } = await import("/src/index.ts");
+      const host = document.createElement("div");
+      host.style.cssText = "width: 640px; height: 320px";
+      document.body.append(host);
+      const chart = createChart(host).setData(
+        Array.from({ length: 10 }, (_, index) => ({
+          time: index * 1_000,
+          open: 10 + index,
+          high: 12 + index,
+          low: 9 + index,
+          close: 11 + index,
+        })),
+      ).setVisibleLogicalRange({ from: 2, to: 7 });
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const x = chart.logicalToCoordinate(4);
+      const y = chart.priceToCoordinate(15);
+      if (x === null || y === null) throw new Error("Expected visible coordinates.");
+      const snapshots: Array<{ logical: number | null; time: number | null; price: number | null; close: number | null }> = [];
+      const unsubscribe = chart.subscribeCrosshairMove((event) => {
+        snapshots.push({ logical: event.logical, time: event.time, price: event.price, close: event.bar?.close ?? null });
+        if (event.bar) event.bar.close = 999;
+      });
+      const canvas = host.querySelector("canvas")!;
+      const bounds = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: bounds.left + x, clientY: bounds.top + y }));
+      canvas.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: bounds.left + x + 1, clientY: bounds.top + y }));
+      canvas.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+      unsubscribe();
+      const output = {
+        logical: chart.coordinateToLogical(x),
+        time: chart.coordinateToTime(x),
+        exactTimeX: chart.timeToCoordinate(4_000),
+        price: chart.coordinateToPrice(y),
+        outside: chart.coordinateToLogical(-1),
+        snapshots,
+      };
+      chart.destroy();
+      host.remove();
+      return output;
+    });
+    expect(result.logical).toBe(4);
+    expect(result.time).toBe(4_000);
+    expect(result.exactTimeX).not.toBeNull();
+    expect(result.price).toBeCloseTo(15, 8);
+    expect(result.outside).toBeNull();
+    expect(result.snapshots).toHaveLength(3);
+    expect(result.snapshots[0]).toMatchObject({ logical: 4, time: 4_000, close: 15 });
+    expect(result.snapshots[1]?.close).toBe(15);
+    expect(result.snapshots[2]).toMatchObject({ logical: null, time: null, price: null, close: null });
+  });
+
   test("keeps the public documentation guides and component reference reachable", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });

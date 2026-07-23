@@ -10,6 +10,8 @@ All notable changes to TradingCharts are documented here. This project follows
 - Public logical/time viewport readback, restoration, live-edge navigation,
   and range-change subscriptions for chart synchronization and historical-data
   loading.
+- Main-plot coordinate conversion and typed crosshair subscriptions for
+  external tooltips and linked cursors, with copied bar snapshots.
 - Configurable interaction policy for wheel, drag, and touch behavior; chart
   gestures now recover cleanly from pointer cancellation.
 

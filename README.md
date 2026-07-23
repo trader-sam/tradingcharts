@@ -72,6 +72,7 @@ The renderer itself has no runtime dependencies. Import `createChart(host, optio
 - Ergonomic series handles: `createSeries(options)` returns `{ id, setData, update, remove }`
 - X axes: `setXAxis({ type: 'time' | 'numeric' | 'ordinal', formatter })`; bars can supply an optional `x` display value
 - Viewport control: `getVisibleLogicalRange()`, `setVisibleLogicalRange(range)`, `getVisibleRange()`, `setVisibleRange(range)`, `scrollToRealTime()`, and `subscribeVisibleRangeChange(listener)` support synchronized time/ordinal charts and historical-data loading. Continuous numeric axes deliberately return `null` for logical/time ranges.
+- Integration coordinates: `logicalToCoordinate()`, `coordinateToLogical()`, `timeToCoordinate()`, `coordinateToTime()`, `priceToCoordinate()`, `coordinateToPrice()`, and `subscribeCrosshairMove(listener)` support external tooltips and linked cursors without Canvas event coupling. Crosshair events contain copied bar snapshots.
 - Interaction policy: `interaction: { mouseWheel, dragPan, touchAction }` lets embedded charts preserve vertical page scrolling (`touchAction: 'pan-y'`, the default) while retaining horizontal chart gestures. Pointer cancellation is handled safely.
 - OHLC inspection: `ohlcTooltip: 'floating'` (default), `'fixed'`, or `false`; fixed legends accept `ohlcLegend: { title, showVolume }` and update from the crosshair without moving
 - Custom-only charts: `primarySeriesVisible: false` and `ohlcTooltip: false`; series types are `line`, `histogram`, `area`, `step-area`, and `scatter`

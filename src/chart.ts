@@ -150,6 +150,17 @@ export type LogicalRange = { from: number; to: number };
 /** Inclusive UTC-millisecond viewport for time-axis charts. */
 export type TimeRange = { from: number; to: number };
 export type VisibleRangeChangeHandler = (range: LogicalRange | null) => void;
+export type CrosshairMoveEvent = {
+  point: { x: number; y: number } | null;
+  pane: string | null;
+  logical: number | null;
+  time: number | null;
+  x: number | string | null;
+  price: number | null;
+  /** A copied bar at the nearest crosshair position, when primary data exists. */
+  bar: Bar | null;
+};
+export type CrosshairMoveHandler = (event: CrosshairMoveEvent) => void;
 type ResolvedOptions = Omit<Required<ChartOptions>, "padding" | "interaction"> & {
   padding: Required<NonNullable<ChartOptions["padding"]>>;
   interaction: Required<NonNullable<ChartOptions["interaction"]>>;
@@ -372,6 +383,8 @@ export class TradingChart {
   private overlays: ChartOverlay[] = [];
   private visibleRangeListeners = new Set<VisibleRangeChangeHandler>();
   private visibleRangeKey = "";
+  private crosshairMoveListeners = new Set<CrosshairMoveHandler>();
+  private crosshairKey = "";
   private series = new Map<
     string,
     Required<Omit<CustomSeriesOptions, "id">> & {
@@ -868,6 +881,89 @@ export class TradingChart {
   subscribeVisibleRangeChange(listener: VisibleRangeChangeHandler) {
     this.visibleRangeListeners.add(listener);
     return () => this.visibleRangeListeners.delete(listener);
+  }
+  /** Converts a loaded bar index to an X coordinate in the current viewport. */
+  logicalToCoordinate(logical: number): number | null {
+    if (!Number.isFinite(logical) || logical < 0 || logical >= this.bars.length) return null;
+    const a = this.layout();
+    if (a.plotW <= 0) return null;
+    let coordinate: number;
+    if (this.numericXAxisActive()) {
+      const value = this.bars[logical].x;
+      if (typeof value !== "number") return null;
+      const range = this.numericXRange();
+      coordinate = a.p.left + ((value - range.lo) / Math.max(range.hi - range.lo, 1e-9)) * a.plotW;
+    } else {
+      const { windowStart } = this.window();
+      coordinate = a.p.left + ((logical + 0.5 - windowStart) / this.visible) * a.plotW;
+    }
+    return coordinate >= a.p.left && coordinate <= a.p.left + a.plotW ? coordinate : null;
+  }
+  /** Finds the nearest loaded bar at a viewport X coordinate. */
+  coordinateToLogical(x: number): number | null {
+    const a = this.layout();
+    if (!Number.isFinite(x) || !this.bars.length || a.plotW <= 0 || x < a.p.left || x > a.p.left + a.plotW) return null;
+    if (this.numericXAxisActive()) {
+      const range = this.numericXRange();
+      const target = range.lo + ((x - a.p.left) / a.plotW) * (range.hi - range.lo);
+      let best: number | null = null;
+      for (let index = 0; index < this.bars.length; index += 1) {
+        const value = this.bars[index].x;
+        if (typeof value !== "number") continue;
+        if (best === null || Math.abs(value - target) < Math.abs(Number(this.bars[best].x) - target)) best = index;
+      }
+      return best;
+    }
+    const { windowStart } = this.window();
+    const logical = Math.round(windowStart + ((x - a.p.left) / a.plotW) * this.visible - 0.5);
+    return logical >= 0 && logical < this.bars.length ? logical : null;
+  }
+  /** Converts an exact loaded timestamp to a viewport X coordinate. */
+  timeToCoordinate(time: number): number | null {
+    if (!Number.isFinite(time)) return null;
+    const logical = this.logicalAtOrAfter(time);
+    return this.bars[logical]?.time === time ? this.logicalToCoordinate(logical) : null;
+  }
+  /** Returns the nearest loaded timestamp at a viewport X coordinate. */
+  coordinateToTime(x: number): number | null {
+    const logical = this.coordinateToLogical(x);
+    return logical === null ? null : this.bars[logical]?.time ?? null;
+  }
+  /** Converts a price value to a Y coordinate in the main or named pane. */
+  priceToCoordinate(price: number, pane = "main"): number | null {
+    if (!Number.isFinite(price)) return null;
+    const a = this.layout();
+    if (pane === "main") {
+      const span = this.basePriceSpan * this.priceZoom;
+      const hi = this.basePriceCenter + this.priceOffset + span / 2;
+      const coordinate = a.p.top + ((hi - price) / span) * a.mainH;
+      return coordinate >= a.p.top && coordinate <= a.p.top + a.mainH ? coordinate : null;
+    }
+    const area = a.paneAreas.find((item) => item.id === pane);
+    if (!area) return null;
+    const scale = this.paneScale(pane);
+    const coordinate = area.top + ((scale.hi - price) / scale.span) * area.height;
+    return coordinate >= area.top && coordinate <= area.top + area.height ? coordinate : null;
+  }
+  /** Converts a Y coordinate to a price value in the main or named pane. */
+  coordinateToPrice(y: number, pane = "main"): number | null {
+    if (!Number.isFinite(y)) return null;
+    const a = this.layout();
+    if (pane === "main") {
+      if (y < a.p.top || y > a.p.top + a.mainH) return null;
+      const span = this.basePriceSpan * this.priceZoom;
+      const hi = this.basePriceCenter + this.priceOffset + span / 2;
+      return hi - ((y - a.p.top) / a.mainH) * span;
+    }
+    const area = a.paneAreas.find((item) => item.id === pane);
+    if (!area || y < area.top || y > area.top + area.height) return null;
+    const scale = this.paneScale(pane);
+    return scale.hi - ((y - area.top) / area.height) * scale.span;
+  }
+  /** Observe crosshair movement without coupling an application to Canvas events. */
+  subscribeCrosshairMove(listener: CrosshairMoveHandler) {
+    this.crosshairMoveListeners.add(listener);
+    return () => this.crosshairMoveListeners.delete(listener);
   }
   getDrawings() {
     return this.drawings.map(cloneDrawing);
@@ -1528,12 +1624,14 @@ export class TradingChart {
       )
         this.resetPriceRange();
       this.updateCursor();
+      this.emitCrosshairMove();
       this.draw();
     });
     this.canvas.addEventListener("pointerleave", (event) => {
       if (event.relatedTarget instanceof Node && this.overlayControl.contains(event.relatedTarget)) return;
       if (!this.gesture) {
         this.pointer = undefined;
+        this.emitCrosshairMove();
         this.scheduleOverlayHide();
         this.updateCursor();
         this.draw();
@@ -1825,6 +1923,29 @@ export class TradingChart {
     if (key === this.visibleRangeKey) return;
     this.visibleRangeKey = key;
     for (const listener of this.visibleRangeListeners) listener(range && { ...range });
+  }
+  private emitCrosshairMove() {
+    const point = this.pointer ? { ...this.pointer } : null;
+    const a = this.layout();
+    const inMainPlot = Boolean(point && point.x >= a.p.left && point.x <= a.p.left + a.plotW && point.y >= a.p.top && point.y <= a.p.top + a.mainH);
+    const pane = inMainPlot ? "main" : null;
+    const logical = inMainPlot && point ? this.coordinateToLogical(point.x) : null;
+    const bar = logical === null ? null : this.bars[logical] ? { ...this.bars[logical] } : null;
+    const event: CrosshairMoveEvent = {
+      point,
+      pane,
+      logical,
+      time: bar?.time ?? null,
+      x: bar?.x ?? null,
+      price: point && pane ? this.coordinateToPrice(point.y) : null,
+      bar,
+    };
+    const key = event.point && event.logical !== null && event.price !== null
+      ? `${event.point.x}:${event.point.y}:${event.logical}:${event.price}`
+      : "null";
+    if (key === this.crosshairKey) return;
+    this.crosshairKey = key;
+    for (const listener of this.crosshairMoveListeners) listener(event);
   }
   private drawNow() {
     const layout = this.layout(),

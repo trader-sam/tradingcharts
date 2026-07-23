@@ -4,6 +4,8 @@ export {
   type Bar,
   type ChartDrawing,
   type ChartEvent,
+  type CrosshairMoveEvent,
+  type CrosshairMoveHandler,
   type TradeMarker,
   type ChartOverlay,
   type ChartOptions,
@@ -12,9 +14,12 @@ export {
   type DrawingAnchor,
   type DrawingTool,
   type PaneOptions,
+  type LogicalRange,
   type SeriesType,
   type SeriesPoint,
   type SeriesHandle,
+  type TimeRange,
+  type VisibleRangeChangeHandler,
   type XAxisOptions,
 } from "./chart";
 
