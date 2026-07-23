@@ -12,6 +12,8 @@ All notable changes to TradingCharts are documented here. This project follows
   loading.
 - Main-plot coordinate conversion and typed crosshair subscriptions for
   external tooltips and linked cursors, with copied bar snapshots.
+- A main-price `priceFormatter` hook applied consistently to axis ticks, OHLC
+  inspection, and crosshair labels.
 - Configurable interaction policy for wheel, drag, and touch behavior; chart
   gestures now recover cleanly from pointer cancellation.
 

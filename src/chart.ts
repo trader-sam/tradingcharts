@@ -13,6 +13,8 @@ export type XAxisOptions = {
   /** Called for every selected tick when the axis is not calendar time. */
   formatter?: (value: number | string, index: number) => string;
 };
+/** Formats values on the main price scale, OHLC readouts, and crosshair badge. */
+export type PriceFormatter = (value: number) => string;
 export type SeriesType = "candlestick" | "line";
 export type DrawingTool =
   "none" | "trendline" | "horizontal-line" | "free-draw";
@@ -135,6 +137,8 @@ export type ChartOptions = {
   ohlcLegend?: { title?: string; showVolume?: boolean };
   /** Caps Canvas backing-store density; set to `1` to prioritize throughput. */
   maxPixelRatio?: number;
+  /** Formats the main price scale, OHLC inspection, and crosshair price label. */
+  priceFormatter?: PriceFormatter;
   /** Fine-grained input behavior for embedded and touch-first charts. */
   interaction?: {
     mouseWheel?: boolean;
@@ -161,9 +165,10 @@ export type CrosshairMoveEvent = {
   bar: Bar | null;
 };
 export type CrosshairMoveHandler = (event: CrosshairMoveEvent) => void;
-type ResolvedOptions = Omit<Required<ChartOptions>, "padding" | "interaction"> & {
+type ResolvedOptions = Omit<Required<ChartOptions>, "padding" | "interaction" | "priceFormatter"> & {
   padding: Required<NonNullable<ChartOptions["padding"]>>;
   interaction: Required<NonNullable<ChartOptions["interaction"]>>;
+  priceFormatter?: PriceFormatter;
 };
 const defaults: ResolvedOptions = {
   background: "#0b1020",
@@ -216,6 +221,7 @@ function drawOhlcCard(
   b: Bar,
   x: number,
   y: number,
+  formatPrice: PriceFormatter,
 ) {
   const width = 252,
     height = 43;
@@ -242,7 +248,7 @@ function drawOhlcCard(
     c.fillText(label, left, y + 14);
     c.font = "11px ui-monospace,SFMono-Regular,monospace";
     c.fillStyle = color;
-    c.fillText(value.toFixed(2), left, y + 30);
+    c.fillText(formatPrice(value), left, y + 30);
   });
   c.restore();
 }
@@ -306,6 +312,7 @@ function drawOhlcLegend(
   x: number,
   y: number,
   options: NonNullable<ChartOptions["ohlcLegend"]>,
+  formatPrice: PriceFormatter,
 ) {
   c.save();
   let lineY = y;
@@ -329,7 +336,7 @@ function drawOhlcLegend(
     left += c.measureText(label).width + 3;
     c.font = "600 10px ui-monospace,SFMono-Regular,monospace";
     c.fillStyle = color;
-    const text = value.toFixed(2);
+    const text = formatPrice(value);
     c.fillText(text, left, lineY);
     left += c.measureText(text).width + 11;
   }
@@ -1197,6 +1204,9 @@ export class TradingChart {
     this.priceZoom = 1;
     this.priceOffset = 0;
   }
+  private formatPrice(value: number, step?: number) {
+    return this.opts.priceFormatter?.(value) ?? value.toFixed(step === undefined ? 2 : tickDecimalPlaces(step));
+  }
   private macdSeries() {
     if (this.macdCache) return this.macdCache;
     return (this.macdCache = macd(this.bars.map((bar) => bar.close)));
@@ -1986,10 +1996,9 @@ export class TradingChart {
       hi,
       Math.max(3, Math.floor(mainH / 34)),
     );
-    const priceDecimals = tickDecimalPlaces(priceTicks.step);
     for (const price of priceTicks.values) {
       const py = y(price);
-      const label = price.toFixed(priceDecimals);
+      const label = this.formatPrice(price, priceTicks.step);
       if (this.opts.yAxis === "right" || this.opts.yAxis === "both")
         c.fillText(label, w - p.right + 9, py + 4);
       if (this.opts.yAxis === "left" || this.opts.yAxis === "both")
@@ -2858,7 +2867,7 @@ export class TradingChart {
       drawOhlcLegend(c, this.bars[lastVisible], p.left + 8, p.top + 15, {
         ...this.opts.ohlcLegend,
         showVolume: this.opts.ohlcLegend.showVolume && this.volumeVisible,
-      });
+      }, (value) => this.formatPrice(value));
     }
     if (
       this.pointer &&
@@ -2902,19 +2911,19 @@ export class TradingChart {
         c.setLineDash([]);
         c.globalAlpha = 1;
         if (this.hasPrimaryData && (this.opts.ohlcTooltip === true || this.opts.ohlcTooltip === "floating"))
-          drawOhlcCard(c, b, p.left + 10, p.top + 8);
+          drawOhlcCard(c, b, p.left + 10, p.top + 8, (value) => this.formatPrice(value));
         else if (this.hasPrimaryData && this.opts.ohlcTooltip === "fixed")
           drawOhlcLegend(c, b, p.left + 8, p.top + 15, {
             ...this.opts.ohlcLegend,
             showVolume: this.opts.ohlcLegend.showVolume && this.volumeVisible,
-          });
+          }, (value) => this.formatPrice(value));
         c.fillStyle = "#dce7ff";
         c.beginPath();
         c.roundRect(w - p.right + 4, this.pointer.y - 10, 60, 20, 4);
         c.fill();
         c.fillStyle = "#11182b";
         c.font = "11px ui-monospace,SFMono-Regular,monospace";
-        c.fillText(price.toFixed(2), w - p.right + 8, this.pointer.y + 4);
+        c.fillText(this.formatPrice(price, priceTicks.step), w - p.right + 8, this.pointer.y + 4);
         const intervalMs =
           this.bars.length > 1
             ? this.bars[1].time - this.bars[0].time

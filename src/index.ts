@@ -15,6 +15,7 @@ export {
   type DrawingTool,
   type PaneOptions,
   type LogicalRange,
+  type PriceFormatter,
   type SeriesType,
   type SeriesPoint,
   type SeriesHandle,
