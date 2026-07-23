@@ -153,6 +153,8 @@ export type ChartOptions = {
 export type LogicalRange = { from: number; to: number };
 /** Inclusive UTC-millisecond viewport for time-axis charts. */
 export type TimeRange = { from: number; to: number };
+/** Inclusive numeric range of the primary price scale. */
+export type PriceRange = { from: number; to: number };
 export type VisibleRangeChangeHandler = (range: LogicalRange | null) => void;
 export type CrosshairMoveEvent = {
   point: { x: number; y: number } | null;
@@ -882,6 +884,31 @@ export class TradingChart {
       if (!this.pricePanUnlocked) this.resetPriceRange();
       this.draw();
     }
+    return this;
+  }
+  /** Returns the active main price-scale bounds after any manual adjustment. */
+  getVisiblePriceRange(): PriceRange {
+    const span = this.basePriceSpan * this.priceZoom;
+    const center = this.basePriceCenter + this.priceOffset;
+    return { from: center - span / 2, to: center + span / 2 };
+  }
+  /** Locks the main price scale to an explicit finite range until autoscale is reset. */
+  setVisiblePriceRange(range: PriceRange) {
+    if (!Number.isFinite(range.from) || !Number.isFinite(range.to) || range.from >= range.to)
+      throw new RangeError("Visible price ranges require finite from < to values.");
+    this.basePriceCenter = (range.from + range.to) / 2;
+    this.basePriceSpan = range.to - range.from;
+    this.priceZoom = 1;
+    this.priceOffset = 0;
+    this.pricePanUnlocked = true;
+    this.draw();
+    return this;
+  }
+  /** Restores automatic main-price scaling from the current visible data. */
+  resetPriceScale() {
+    this.pricePanUnlocked = false;
+    this.resetPriceRange();
+    this.draw();
     return this;
   }
   /** Observe distinct visible logical viewport changes. Returns an unsubscribe function. */

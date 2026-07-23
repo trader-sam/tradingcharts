@@ -14,6 +14,7 @@ All notable changes to TradingCharts are documented here. This project follows
   external tooltips and linked cursors, with copied bar snapshots.
 - A main-price `priceFormatter` hook applied consistently to axis ticks, OHLC
   inspection, and crosshair labels.
+- Public main-price range readback, explicit fixed ranges, and autoscale reset.
 - Configurable interaction policy for wheel, drag, and touch behavior; chart
   gestures now recover cleanly from pointer cancellation.
 

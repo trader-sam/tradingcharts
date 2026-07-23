@@ -62,6 +62,12 @@ const x = chart.timeToCoordinate(timestamp);
 const price = chart.coordinateToPrice(pointerY);
 unsubscribeCrosshair();</pre>
         <p>Coordinate helpers use CSS pixels relative to the chart canvas and return <code>null</code> outside the primary plot or for unavailable data. Crosshair callbacks use copied bar snapshots, so consumer mutations cannot affect chart state.</p>
+        <h2>Control the main price scale</h2>
+        <pre>
+chart.setVisiblePriceRange({ from: 95, to: 105 });
+const range = chart.getVisiblePriceRange();
+chart.resetPriceScale(); // return to automatic visible-data scaling</pre>
+        <p>Price ranges apply to the primary OHLC scale. Lower panes retain their own automatic scale behavior until their dedicated scale API is introduced.</p>
         <p>Charts use <code>touchAction: 'pan-y'</code> by default: vertical touch movement remains available to the surrounding page, while horizontal chart gestures work normally. Use <code>interaction</code> to disable wheel or drag navigation, or choose a different touch-action policy for a dedicated chart surface.</p>
         <p><a href="/docs.html">Back to the complete API overview →</a></p>
       </main>
